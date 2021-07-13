@@ -609,9 +609,7 @@ function setProposalCurrent(dbInst, propInst) {
     return "Problem"
   }
   return "Success"
-
 }
-
 
 /*****************UTILITIES********************* */
 
@@ -680,6 +678,16 @@ function isAlnum_(char) {
 }
 function isDigit_(char) {
   return char >= '0' && char <= '9';
+}
+
+function testRangeToObjects() {
+  var input = [["a", "b", "c"], [1, 2, 3]];
+  var output = rangeToObjects(input);
+  console.log(output);
+}
+
+function testCamelString() {
+  console.log(camelString(["now", "is the", "time"]));
 }
 
 /**
