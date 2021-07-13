@@ -38,9 +38,12 @@ function evalProposal() {
     else { propS = propO.answer; }
     var prop = new proposalC(dbInst, propS);
 
-    // retS = handleExpenses(dbInst,docInst );
-    // retS = handleOver(dbInst, docInst);
+    retS = handleExpenses(dbInst, docInst);
+    console.log("Expenses: " + retS);
+    retS = handleOver(dbInst, docInst);
+    console.log("Over: " + retS);
     retS = handlePremises(dbInst, docInst, propS);
+    console.log("Premises: " + retS);
   } catch (e) {
     Logger.log(`In ${fS}: ${e}`);
     return "Problem"
@@ -64,20 +67,20 @@ const percent_formatter = new Intl.NumberFormat('en-US', {
 })
 
 /**
- * Purpose
+ * Purpose: Deal with Premises, Building (Location)
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
  * @return {String} retS - return value
  */
 function handlePremises(dbInst, docInst, propIDS) {
-  var fS = "handlePremises",retS;
+  var fS = "handlePremises", retS, probS;
   try {
     var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS);
     var spid = retA[0].fields.spaceidentity;
-     retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid);
+    retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid);
     var spA = retA[0].fields
-     retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises");
+    retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises");
     var premClauseBody = retA[0].fields.clausebody;
 
     /* 
@@ -85,7 +88,7 @@ function handlePremises(dbInst, docInst, propIDS) {
     known as suite <<SuiteNumber>> (“Premises”). The Premises shall be measured in 
     accordance with the REBNY standard. Tenant may elect to have its architect confirm the Premises RSF.
     */
-    var fmtsf =new Intl.NumberFormat().format(spA.squarefeet)
+    var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
     if (spA.floor) {
       premClauseBody = premClauseBody.replace("<<Floor>>", spA.floor);
@@ -97,12 +100,15 @@ function handlePremises(dbInst, docInst, propIDS) {
     } else {
       premClauseBody = premClauseBody.replace("known as suite <<SuiteNumber>>", "");
     }
-   retS = updateTemplateBody("<<Premises>>", premClauseBody, docInst) 
+    retS = updateTemplateBody("<<Premises>>", premClauseBody, docInst)
+    retS = updateTemplateBody("<<Address>>", spA.address, docInst);
 
 
   } catch (err) {
-  console.log(`In ${fS}: ${err}`)
-}
+    probS = `In ${fS}: ${err}`
+    Logger.log(probS);
+  }
+  return "Success"
 }
 
 
@@ -122,7 +128,7 @@ function handlePremises(dbInst, docInst, propIDS) {
 function handleExpenses(dbInst, docInst) {
   var fS = "handleExpenses";
   var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, retS;
+  var repClauseS, retS, probS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
@@ -155,10 +161,12 @@ function handleExpenses(dbInst, docInst) {
   }
 
   catch (err) {
-    Logger.log(err);
+    probS = `In ${fS}: ${err}`
+    Logger.log(probS);
+    return probS
 
   }
-  return pdA
+  return "Success"
 }
 
 /**

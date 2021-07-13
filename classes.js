@@ -105,9 +105,9 @@ class brokerC extends personC {
 /***************** doc class ************************************ */
 
 class docC {
-  constructor() {
-    this.file = DriveApp.getFileById("1udz_HSz9HWNGq-OsdgzTXmu7s1H6GRArPfC-APKcQCk");
-    this.folder = DriveApp.getFolderById('1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q');
+  constructor(docID,foldID) {
+    this.file = DriveApp.getFileById(docID);
+    this.folder = DriveApp.getFolderById(foldID);
     this.docName = this.file.getName();
     this.ds = formatCurrentDate();
     this.copy = this.file.makeCopy(this.docName + " " + this.ds, this.folder);
