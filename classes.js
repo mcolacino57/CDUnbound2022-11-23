@@ -3,7 +3,7 @@ class proposalC {
   constructor(dbInst,propName){
     var allPropsA = getProposalNamesAndIDs(dbInst,userEmail);
     this.prop = allPropsA.filter((p)=> {
-      return p[0]==propName
+      return p[0]==propName  // returns array with propName and propID
     })[0];
   }
 

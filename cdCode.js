@@ -1,4 +1,5 @@
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
+const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 const userEmail = Session.getActiveUser().getEmail();
 const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';
@@ -10,9 +11,12 @@ const cdFormID = '1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4'; // Create Docum
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
 function onSubmit() {
-  // Get which proposal was selected
+// var retS = evalProposal()
+
 
 }
+
+
 
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
@@ -36,14 +40,18 @@ function evalProposal() {
       throw new Error('missing proposal');
     }
     else { propS = propO.answer; }
-    var prop = new proposalC(dbInst, propS);
+    var propInst = new proposalC(dbInst, propS);
+    retS = setProposalCurrent(dbInst,propInst)
 
-    retS = handleExpenses(dbInst, docInst);
+    //retS = handleExpenses(dbInst, docInst);
     console.log("Expenses: " + retS);
-    retS = handleOver(dbInst, docInst);
+    //retS = handleOver(dbInst, docInst);
     console.log("Over: " + retS);
-    retS = handlePremises(dbInst, docInst, propS);
+    //retS = handleTenAndPrem(dbInst, docInst, propS);
     console.log("Premises: " + retS);
+    retS = handleTI(dbInst,docInst);
+    console.log("TI: " + retS);
+
   } catch (e) {
     Logger.log(`In ${fS}: ${e}`);
     return "Problem"
@@ -53,36 +61,62 @@ function evalProposal() {
   return "Success"
 }
 
-/************************Utilities *********************** */
-const curr_formatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2
-})
 
-const percent_formatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-})
 
 /**
- * Purpose: Deal with Premises, Building (Location)
+ * Purpose: Handle TI stuff, which 
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
  * @return {String} retS - return value
  */
-function handlePremises(dbInst, docInst, propIDS) {
-  var fS = "handlePremises", retS, probS;
+
+function handleTI(dbInst,docInst) {
+  var fS = "handleTI",probS,retS,repClauseS;
+  var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
+
+  try {
+  var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
+  var tiTerms = "";
+      pdA.forEach((pd) => {
+        if(pd.proposalclausekey==="tiAllow") {
+          var tiDollars = curr_formatter.format(pd.proposalanswer);
+          retS = updateTemplateBody("<<TenantImprovementPSF>>",tiDollars,docInst);
+        } else {
+        repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
+        tiTerms = tiTerms + repClauseS + "\n\n"
+        }
+      });
+      //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
+      if(tiTerms !=""){ tiTerms = tiTerms.replace(/\n\n$/, '');}
+      retS = updateTemplateBody("<<TenantImprovements>>",tiTerms,docInst);
+
+  } catch(err){
+    probS = `In ${fS}: ${err}`
+    Logger.log(probS);
+    return probS
+  }
+  return "Success"
+}
+
+
+/**
+ * Purpose: Deal with Premises, Building (Location), tenant
+ *
+ * @param  {Object} dbInst - instance of database class
+ * @param  {Object} docInst - instance of document class
+ * @return {String} retS - return value
+ */
+function handleTenAndPrem(dbInst, docInst, propIDS) {
+  var fS = "handleTenAndPrem", retS, probS;
   try {
     var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS);
     var spid = retA[0].fields.spaceidentity;
+    var tenantNameS = retA[0].fields.tenantname;
     retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid);
     var spA = retA[0].fields
     retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises");
     var premClauseBody = retA[0].fields.clausebody;
-
     /* 
     <<SF>> rentable square feet (“RSF”) located on floor <<Floor>> of the Building
     known as suite <<SuiteNumber>> (“Premises”). The Premises shall be measured in 
@@ -102,7 +136,7 @@ function handlePremises(dbInst, docInst, propIDS) {
     }
     retS = updateTemplateBody("<<Premises>>", premClauseBody, docInst)
     retS = updateTemplateBody("<<Address>>", spA.address, docInst);
-
+    retS = updateTemplateBody("<<ClientCompany>>", tenantNameS, docInst);
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -110,10 +144,6 @@ function handlePremises(dbInst, docInst, propIDS) {
   }
   return "Success"
 }
-
-
-
-
 
 
 /**
@@ -159,18 +189,17 @@ function handleExpenses(dbInst, docInst) {
       }
     });
   }
-
   catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
     return probS
-
   }
   return "Success"
 }
 
 /**
  * Purpose: Replaces elements from both Proposal Start and Proposal Overview, from prop_detail_ex
+ *  also do date of proposal
  *
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
@@ -205,9 +234,9 @@ function handleOver(dbInst, docInst) {
         throw new Error(`In ${fS}: problem with updateTemplateBody: ${retS}`)
       }
     });
-    var valsFromProposal
-  }
 
+    retS = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+  }
   catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
@@ -223,7 +252,16 @@ function testHandleOver() {
   var ret = handleOver(dbInst, docInst);
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
+}
 
+function tHandleOE() {
+  var dbInst = new databaseC("applesmysql");
+  var docInst = new docC(docID, foldID);
+  var ds = docInst.ds;
+  var ret = handleExpenses(dbInst, docInst);
+  // Logger.log(ret)
+  docInst.saveAndCloseTemplate();
+  dbInst.closeconn()
 }
 
 /**
@@ -249,17 +287,20 @@ function updateTemplateBody(replStructure, replText, docInst) {
   return "Success"
 }
 
-function tHandleOE() {
-  var dbInst = new databaseC("applesmysql");
-  var docInst = new docC(docID, foldID);
-  var ds = docInst.ds;
-  var ret = handleExpenses(dbInst, docInst);
-  // Logger.log(ret)
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-}
 
 
+/************************Utilities *********************** */
+const curr_formatter = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 2
+})
+
+const percent_formatter = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2
+})
 
 
 

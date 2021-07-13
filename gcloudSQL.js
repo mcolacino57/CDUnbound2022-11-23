@@ -572,6 +572,46 @@ function writeProposal(dbInst, record) {
   return "Success"
 }
 
+/**
+ * Purpose: Takes the proposal instance and sets the proposal to current, 
+ * toggling all other proposals (meaning ALL) to false first
+ * 
+ * @param  {Object} dbInst - instance of databaseC
+ * @param  {Object} propInst - instance of proposalC
+ * @return {String} retS - return value
+ */
+/* UPDATE [LOW_PRIORITY] [IGNORE] table_name 
+SET 
+    column_name1 = expr1,
+    column_name2 = expr2,
+    ...
+[WHERE
+    condition];*/
+
+const logSetProposalCurrent = false;
+function setProposalCurrent(dbInst, propInst) {
+  var fS = "setProposalCurrent";
+  try {
+    var pid = propInst.getpropID();
+    var locConn = dbInst.getconn(); // get connection from the instance
+
+    // first set all proposal current -> false
+    var locConn = dbInst.getconn(); // get connection from the instance
+    var qryS1 = `UPDATE proposals SET proposals.current = false;`;
+    var stmt = locConn.prepareStatement(qryS1);
+    stmt.execute();
+    var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= 'pid';`;
+    // console.log(qryS);
+    stmt = locConn.prepareStatement(qryS2);
+    stmt.execute();
+  } catch (err) {
+    logSetProposalCurrent ? Logger.log(`In ${fS}: ${err}`) : true;
+    return "Problem"
+  }
+  return "Success"
+
+}
+
 
 /*****************UTILITIES********************* */
 
