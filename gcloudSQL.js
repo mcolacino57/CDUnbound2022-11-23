@@ -237,7 +237,7 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
   results.close();
   stmt.close();
   stmt2.close();
-  
+
   return rowA
 }
 
@@ -572,6 +572,7 @@ function writeProposal(dbInst, record) {
   return "Success"
 }
 
+
 /*****************UTILITIES********************* */
 
 /**
@@ -710,6 +711,7 @@ function camelArray(headers) {
   }
   return keys;
 }
+
 
 
 

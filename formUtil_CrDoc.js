@@ -3,7 +3,7 @@
 // This form selects a proposal and attempts to created a updated document
 // from the Proposal Template 1
 const CREATE_DOC = false;
-const cdFormID ='1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4'; // Create Document Form
+// const cdFormID ='1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4'; // Create Document Form
 const cdDropdownID = '1941214219';
 
 
@@ -93,7 +93,7 @@ function fillProposalDropdown_(dbInst, formID, dropDownID) {
 
 function runFillProposalDropDown() {
   var dbInst = new databaseC("applesmysql");
-  var retS = fillProposalDropdown_(cdFormID, cdDropdownID);
+  var retS = fillProposalDropdown_(dbInst,cdFormID, cdDropdownID);
   console.log(retS)
 }
 

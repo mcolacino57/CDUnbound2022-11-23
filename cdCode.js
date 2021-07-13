@@ -4,8 +4,51 @@ const userEmail = Session.getActiveUser().getEmail();
 const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';
+const cdFormID = '1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4'; // Create Document Form
+
 
 Logger = BetterLog.useSpreadsheet(ssLogID);
+
+function onSubmit() {
+  // Get which proposal was selected
+
+}
+
+/**
+ * Purpose: Evaluate responses to this form and write records to prop_detail table
+ *
+ * @return {String} retS - Success
+ */
+function evalProposal() {
+  const fS = "evalProposal";
+  const pQS = "Proposal Name?"; // proposal question
+  var propS, retS;
+  try {
+    var dbInst = new databaseC("applesmysql");
+    var docInst = new docC(docID, foldID);
+    // get responses into an array of objects of the form [{"question": qS, "answer": aS},...]
+    var f = FormApp.openById(cdFormID);
+    var respA = crFormResponseArray(f);
+    // get proposal name
+    var propO = respA.find((responseObj) => responseObj.question === pQS);
+    if (!propO) {
+      propS = "No proposal in form";
+      throw new Error('missing proposal');
+    }
+    else { propS = propO.answer; }
+    var prop = new proposalC(dbInst, propS);
+
+    // retS = handleExpenses(dbInst,docInst );
+    // retS = handleOver(dbInst, docInst);
+    retS = handlePremises(dbInst, docInst, propS);
+  } catch (e) {
+    Logger.log(`In ${fS}: ${e}`);
+    return "Problem"
+  }
+  docInst.saveAndCloseTemplate();
+  dbInst.closeconn()
+  return "Success"
+}
 
 /************************Utilities *********************** */
 const curr_formatter = new Intl.NumberFormat('en-US', {
@@ -19,6 +62,52 @@ const percent_formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2
 })
+
+/**
+ * Purpose
+ *
+ * @param  {Object} dbInst - instance of database class
+ * @param  {Object} docInst - instance of document class
+ * @return {String} retS - return value
+ */
+function handlePremises(dbInst, docInst, propIDS) {
+  var fS = "handlePremises",retS;
+  try {
+    var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS);
+    var spid = retA[0].fields.spaceidentity;
+     retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid);
+    var spA = retA[0].fields
+     retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises");
+    var premClauseBody = retA[0].fields.clausebody;
+
+    /* 
+    <<SF>> rentable square feet (“RSF”) located on floor <<Floor>> of the Building
+    known as suite <<SuiteNumber>> (“Premises”). The Premises shall be measured in 
+    accordance with the REBNY standard. Tenant may elect to have its architect confirm the Premises RSF.
+    */
+    var fmtsf =new Intl.NumberFormat().format(spA.squarefeet)
+    premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
+    if (spA.floor) {
+      premClauseBody = premClauseBody.replace("<<Floor>>", spA.floor);
+    } else {
+      premClauseBody = premClauseBody.replace("located on floor <<Floor>> of the Building", "");
+    }
+    if (spA.suite) {
+      premClauseBody = premClauseBody.replace("<<SuiteNumber>>", spA.suite);
+    } else {
+      premClauseBody = premClauseBody.replace("known as suite <<SuiteNumber>>", "");
+    }
+   retS = updateTemplateBody("<<Premises>>", premClauseBody, docInst) 
+
+
+  } catch (err) {
+  console.log(`In ${fS}: ${err}`)
+}
+}
+
+
+
+
 
 
 /**
@@ -98,7 +187,7 @@ function handleOver(dbInst, docInst) {
     var overInsS = "('useType','llName','llbrokerName','commDate','leaseTerm','earlyAccess')";
     pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
     pdA.forEach((pd) => {
-      if(pd.proposalclausekey==="commDate"){
+      if (pd.proposalclausekey === "commDate") {
         var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
       } else {
         repS = pd.proposalanswer;
@@ -116,7 +205,7 @@ function handleOver(dbInst, docInst) {
     Logger.log(probS);
     return probS
   }
-return "Success"
+  return "Success"
 
 }
 
@@ -164,14 +253,7 @@ function tHandleOE() {
 
 
 
-function main() {
-  var dbInst = new databaseC("applesmysql");
-  var docInst = new docC(docID, foldID);
-  var ret = handleExpenses(dbInst, docInst);
-  ret = handleOver(dbInst, docInst);
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-}
+
 
 
 

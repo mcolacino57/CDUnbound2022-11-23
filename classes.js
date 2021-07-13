@@ -1,7 +1,19 @@
-// Updated 210711 by changing the docC constructor to have the ID passed as param; 
-// should be reflected in other versions of classes.gs and the calling code refactored (any calling code at this point?)
+/*********************proposal class ******************************** */
+class proposalC {
+  constructor(dbInst,propName){
+    var allPropsA = getProposalNamesAndIDs(dbInst,userEmail);
+    this.prop = allPropsA.filter((p)=> {
+      return p[0]==propName
+    })[0];
+  }
 
-/*****************clause class ************************************ */
+  getpropID(){
+    return this.prop[1];
+  }
+
+  }
+  /*****************clause class ************************************ */
+
 class clauseC {
   constructor(canonName, geo) {
     this.name = canonName; //never changes
@@ -93,18 +105,21 @@ class brokerC extends personC {
 /***************** doc class ************************************ */
 
 class docC {
-  constructor(fID, foldID) {
-    this.file = DriveApp.getFileById(fID);
-    this.folder = DriveApp.getFolderById(foldID);
+  constructor() {
+    this.file = DriveApp.getFileById("1udz_HSz9HWNGq-OsdgzTXmu7s1H6GRArPfC-APKcQCk");
+    this.folder = DriveApp.getFolderById('1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q');
     this.docName = this.file.getName();
-    this.copy = this.file.makeCopy(this.docName + " " + Utilities.formatDate(new Date(), "GMT+1", "yyyyMMdd"), this.folder);
+    this.ds = formatCurrentDate();
+    this.copy = this.file.makeCopy(this.docName + " " + this.ds, this.folder);
     this.copyName = this.copy.getName()
     this.locDocument = DocumentApp.openById(this.copy.getId());
     this.locBody = this.locDocument.getBody();
   }
 
   getBodyText() { return this.locBody.getText() }
+
   saveAndCloseTemplate() {
+
     this.locDocument.saveAndClose();
   }
 
@@ -185,4 +200,6 @@ class databaseC {
 
   }
 }
-
+function formatCurrentDate() {
+  return Utilities.formatDate(new Date(), "GMT+1", "yyyyMMdd");
+}
