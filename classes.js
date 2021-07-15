@@ -5,10 +5,14 @@ class proposalC {
     this.prop = allPropsA.filter((p)=> {
       return p[0]==propName  // returns array with propName and propID
     })[0];
+    this.propName=this.prop[0];
+    this.propID=this.prop[1];
   }
-
+  getpropName(){
+    return this.propName
+  }
   getpropID(){
-    return this.prop[1];
+    return this.propID
   }
 
   }

@@ -88,6 +88,7 @@ function createClauseTable_(dbInst) {
 /****************Called from other gs files*************** */
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
+ * Returns a json record
  *
  * @param  {object} dbInst - instance of database class
  * @param {string} tableNameS - table to read
@@ -100,7 +101,7 @@ function createClauseTable_(dbInst) {
 
 const logReadFromTable = false;
 const maxRows = 1000;
-function readFromTable(dbInst, tableNameS, colS, searchS) {
+function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
   var fS = "readFromTable";
   var logLoc = logReadFromTable;
   /*********connect to database ************************************ */
@@ -154,6 +155,11 @@ function readFromTable(dbInst, tableNameS, colS, searchS) {
   results.close();
   stmt.close();
   stmt2.close();
+
+  // Turn the result into a json record with fields as the key for each record
+  // This preserves backward compatibility with the AT code which used a REST
+  // call to get the data which was returned as json structure
+  // This should be changed to be simpler in future
   var retA = [];
   for (j in rowA) {
     var retObj = new Object();
@@ -161,7 +167,11 @@ function readFromTable(dbInst, tableNameS, colS, searchS) {
     retA.push(retObj);
   }
   // console.log(retA);
-  return retA
+  if (jsonyn) { 
+    return retA }
+  else { 
+    return rowA }
+
 }
 
 
@@ -379,9 +389,10 @@ function getProposalNamesAndIDs(dbInst, userS = "mcolacino@squarefoot.com") {
   var tableNameS = "proposals";
   var colNameS = "CreatedBy";
   var searchS = userS;
-  var ret = readFromTable(dbInst, tableNameS, colNameS, searchS);
+  var jsonyn = false;
+  var ret = readFromTable(dbInst, tableNameS, colNameS, searchS,jsonyn);
   var propNameIDA = ret.map(function (record) {
-    return [record.fields.proposalname, record.fields.proposalid]
+    return [record.proposalname, record.proposalid]
   })
   //console.log(propNameIDA)
   return propNameIDA
@@ -609,7 +620,9 @@ function setProposalCurrent(dbInst, propInst) {
     return "Problem"
   }
   return "Success"
+
 }
+
 
 /*****************UTILITIES********************* */
 
@@ -678,16 +691,6 @@ function isAlnum_(char) {
 }
 function isDigit_(char) {
   return char >= '0' && char <= '9';
-}
-
-function testRangeToObjects() {
-  var input = [["a", "b", "c"], [1, 2, 3]];
-  var output = rangeToObjects(input);
-  console.log(output);
-}
-
-function testCamelString() {
-  console.log(camelString(["now", "is the", "time"]));
 }
 
 /**
