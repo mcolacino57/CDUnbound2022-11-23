@@ -11,10 +11,56 @@ const cdFormID = '1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4';  // Create Docu
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
 function onSubmit() {
-  // var retS = evalProposal()
-
-
+  var retS = evalProposal();
 }
+
+/**
+ * Purpose: Evaluate responses to this form and write records to prop_detail table
+ *
+ * @return {String} retS - Success
+ */
+function evalProposal() {
+  const fS = "evalProposal";
+  const pQS = "Proposal Name?"; // proposal question
+  var propS, retS;
+  try {
+    var dbInst = new databaseC("applesmysql");
+    var docInst = new docC(docID, foldID);
+    // get responses into an array of objects of the form [{"question": qS, "answer": aS},...]
+    var f = FormApp.openById(cdFormID);
+    var respA = crFormResponseArray(f);
+    // get proposal name
+    var propO = respA.find((responseObj) => responseObj.question === pQS);
+    if (!propO) {
+      propS = "No proposal in form";
+      throw new Error('missing proposal');
+    }
+    else { propS = propO.answer; }
+    var propInst = new proposalC(dbInst, propS);
+    retS = setProposalCurrent(dbInst, propInst)
+
+    retS = handleExpenses(dbInst, docInst);
+    console.log("Expenses: " + retS);
+    retS = handleOver(dbInst, docInst);
+    console.log("Over: " + retS);
+    retS = handleTenAndPrem(dbInst, docInst, propS);
+    console.log("Premises: " + retS);
+    retS = handleTI(dbInst, docInst);
+    console.log("TI: " + retS);
+    retS = handleJSON(dbInst, docInst);
+    console.log(retS)
+    retS = handleBaseRent(dbInst, docInst, propInst);
+    console.log(retS);
+
+  } catch (e) {
+    Logger.log(`In ${fS}: ${e}`);
+    return "Problem"
+  }
+  docInst.saveAndCloseTemplate();
+  dbInst.closeconn()
+  return "Success"
+}
+
 
 /*********** handleBaseRent********/
 /**
@@ -53,7 +99,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
   // go to the DB and get the proposed rental rates associated with this spaceID
   // var retBR = getBySpaceID(spaceID, "proposedrent");
   var jsonyn = false;
-  var records = readFromTable(dbInst,"base_rent","ProposalID",propInst.getpropID(),jsonyn);
+  var records = readFromTable(dbInst, "base_rent", "ProposalID", propInst.getpropID(), jsonyn);
 
   // call the sort function (below) to order by begin date (note should be done in DB)
   records.sort(sortDate);
@@ -78,54 +124,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
   // c0.getChild(2).setColumnWidth(2, 70);
 
   // docInstance.saveAndCloseTemplate();
-  return `Base Rent Updated for ${proptInst.getpropID()}`
-}
-
-/**
- * Purpose: Evaluate responses to this form and write records to prop_detail table
- *
- * @return {String} retS - Success
- */
-function evalProposal() {
-  const fS = "evalProposal";
-  const pQS = "Proposal Name?"; // proposal question
-  var propS, retS;
-  try {
-    var dbInst = new databaseC("applesmysql");
-    var docInst = new docC(docID, foldID);
-    // get responses into an array of objects of the form [{"question": qS, "answer": aS},...]
-    var f = FormApp.openById(cdFormID);
-    var respA = crFormResponseArray(f);
-    // get proposal name
-    var propO = respA.find((responseObj) => responseObj.question === pQS);
-    if (!propO) {
-      propS = "No proposal in form";
-      throw new Error('missing proposal');
-    }
-    else { propS = propO.answer; }
-    var propInst = new proposalC(dbInst, propS);
-    retS = setProposalCurrent(dbInst, propInst)
-
-   // retS = handleExpenses(dbInst, docInst);
-    console.log("Expenses: " + retS);
-    //retS = handleOver(dbInst, docInst);
-    console.log("Over: " + retS);
-    //retS = handleTenAndPrem(dbInst, docInst, propS);
-    console.log("Premises: " + retS);
-    //retS = handleTI(dbInst, docInst);
-    console.log("TI: " + retS);
-    // retS = handleJSON(dbInst, docInst);
-    console.log(retS)
-    retS = handleBaseRent(dbInst, docInst, propInst);
-    console.log(retS);
-
-  } catch (e) {
-    Logger.log(`In ${fS}: ${e}`);
-    return "Problem"
-  }
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return "Success"
+  return `Base Rent Updated for ${propInst.getpropName()}`
 }
 
 /**
@@ -137,7 +136,7 @@ function evalProposal() {
  * @return {String} retS - return value
  */
 function handleJSON(dbInst, docInst) {
-  var fS = "handleJSON", probS,retS;
+  var fS = "handleJSON", probS, retS;
   try {
     var fileName = "mcolacino.json";
     var files = DriveApp.getFilesByName(fileName);
@@ -146,14 +145,14 @@ function handleJSON(dbInst, docInst) {
       var content = file.getBlob().getDataAsString();
       var json = JSON.parse(content);
     }
-    if(json.name) {
-      retS = updateTemplateBody("<<BrokerName>>", json.name,docInst)
+    if (json.name) {
+      retS = updateTemplateBody("<<BrokerName>>", json.name, docInst)
     }
-    if(json.email) {
-      retS = updateTemplateBody("<<BrokerEmail>>",json.email,docInst);
+    if (json.email) {
+      retS = updateTemplateBody("<<BrokerEmail>>", json.email, docInst);
     }
-    if(json.license_num) {
-      retS = updateTemplateBody("<<BrokerageLicense>>",json.license_num,docInst);
+    if (json.license_num) {
+      retS = updateTemplateBody("<<BrokerageLicense>>", json.license_num, docInst);
     }
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -209,13 +208,14 @@ function handleTI(dbInst, docInst) {
 function handleTenAndPrem(dbInst, docInst, propIDS) {
   var fS = "handleTenAndPrem", retS, probS;
   try {
-    var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS);
-    var spid = retA[0].fields.spaceidentity;
-    var tenantNameS = retA[0].fields.tenantname;
-    retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid);
-    var spA = retA[0].fields
-    retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises");
-    var premClauseBody = retA[0].fields.clausebody;
+    var jsonyn = false;
+    var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, jsonyn);
+    var spid = retA[0].spaceidentity;
+    var tenantNameS = retA[0].tenantname;
+    retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid, jsonyn);
+    var spA = retA[0]
+    retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
+    var premClauseBody = retA[0].clausebody;
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
     if (spA.floor) {
@@ -383,11 +383,11 @@ function updateTemplateBody(replStructure, replText, docInst) {
   return "Success"
 }
 
-function testHandleBR(){
-    var dbInst = new databaseC("applesmysql");
-    var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
-    var docInst = new docC(docID,foldID);
-    var retS = handleBaseRent(dbInst,docInst,propInst);
+function testHandleBR() {
+  var dbInst = new databaseC("applesmysql");
+  var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
+  var docInst = new docC(docID, foldID);
+  var retS = handleBaseRent(dbInst, docInst, propInst);
 
 }
 
