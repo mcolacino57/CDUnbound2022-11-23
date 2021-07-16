@@ -5,7 +5,7 @@ const userEmail = Session.getActiveUser().getEmail();
 const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidated spreadsheet--general debug
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
-const cdFormID = '1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4';  // Create Document Form
+
 
 
 Logger = BetterLog.useSpreadsheet(ssLogID);

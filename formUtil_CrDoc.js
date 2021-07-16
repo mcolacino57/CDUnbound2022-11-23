@@ -1,9 +1,16 @@
-// formUtil_CrDoc / Created: 210712
-// 
-// This form selects a proposal and attempts to created a updated document
-// from the Proposal Template 1
-const CREATE_DOC = false;
-// const cdFormID ='1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4'; // Create Document Form
+const proposalS = "Proposal to be used:"
+
+const oeFormID = '1eQEOsPOHrrQuHMRKrTghjDggS7wrTWDr4L-YIQntBsk'; // Operating Expenses
+const tiFormID = '1sfdyrkMJ1b8oXjetqSjvsZSdcogEfDDKR3J0h8KWh9M'; // Tenant Improvements
+const poFormID = '1LcRF_WPTZ3bNudX6h_rdTzRARMRl7Rajf4gUR6JKPzA'; // Proposal Overview
+const psFormID = '1ZVxqRKokgqTTfloI_zFBi59Sv7Q2NLDOB6fmoAcLAcE'; // Proposal Start
+const cdFormID = '1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4';  // Create Document Form
+
+const tiDropdownID = '1210099673';
+const oeDropdownID = '332505004';
+const poDropdownID = '357079143';
+const poBrokerDropdownID = '1181615854'; 
+const psDropdownID = '1120136627'; // used in fillSpacesDropdown below
 const cdDropdownID = '1941214219';
 
 
@@ -27,6 +34,8 @@ function testExtractItemID() {
   var f = FormApp.openById(cdFormID);
   var ret = extractItemID(f);
 }
+
+
 
 
 /**
@@ -53,7 +62,6 @@ function getItemResps(form) {
 
 
 /*************************DROPDOWN INITIALIZATION******* */
-const proposalS = "Proposal to be used:"
 
 /**
  * Purpose: take an array of strings and populate a dropdown in formID
@@ -170,21 +178,59 @@ function crFormResponseArray() {
 function testCrFormResponseArray() { var ret = crFormResponseArray(psFormID); console.log(ret) }
 
 
+/************************ FORM PREP ******************************************************* */
+/**
+ * Purpose: Run this function to populate the ck_question table; this should be run
+ * whenever a new question is added to the form; START HERE, and use emptyCk_Question if needed
+ * to empty out the ck_question table
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {String} retS - return value
+ */
+
+const formID_G = cdFormID;
+function writeAllQuestionsKeys() {
+  var fS = 'writeAllQuestionsKeys';
+  var dbInst = new databaseC("applesmysql");
+  try {
+    var qcrA = crFormKeyArray(formID_G);  // this is specific to the particular for and needs changing in other formUtils
+    if (qcrA) {
+      qcrA.forEach(r => {
+        var qcrRec = {
+          'Question': r.question,
+          'ClauseKey': r.clausekey,
+          'ReplStruct': r.replacement,
+          'CreatedBy': userEmail,
+          'CreatedWhen': todayS,
+          'ModifiedWhen': nowS,
+          'ModifiedBy': userEmail
+        }
+        var rets = writeCk_Question(dbInst, qcrRec);
+        if (rets==="Problem") {throw new Error(`In ${fS}: problem with ${qcrA.qustion}`)}
+      })
+    }
+  } catch (err) {
+    console.log(`In ${fS}: ${err}`);
+    return "Problem"
+  }
+  return "Success"
+}
+
 /**
  * Purpose: Create array of objects with question, clausekey, replacement
- * by extracting strings from the form descriptions:
- * assumes description (getHelpText) for each question in the form: 
- * key: <clausekey> / replacement: <replacement> 
- *
+ * This function is called by writeAllQuestionKeys
  * @param  {String} formID - string ID for form
  * @return {object[]} sectionA - return value
  */
-
-
+/* assumes description (getHelpText) for each question in the form: 
+key: <clausekey> / replacement: <replacement> */
+// small change to test commit
 function crFormKeyArray(formID) {
+  form = FormApp.openById(formID);
   var fS = "crFormKeyArray";
   try {
-    form = FormApp.openById(formID)
+    form = FormApp.getActiveForm()
     var items = form.getItems();
     var qcrA = [];
     for (var i in items) {
@@ -200,55 +246,14 @@ function crFormKeyArray(formID) {
     console.log(`In ${fS}: ${e}`);
     return false
   }
-  console.log(qcrA);
+  // console.log(qcrA);
   return qcrA
 }
 
-/**
- * Purpose: Takes a form and writes to the ck_question table 
- * using info extracted from the form via crFormKeyArray
- *
- * @param  {String} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
- */
-
-function writeAllQuestionsKeys(formID) {
-  var fS = 'writeAllQuestionsKeys';
-  var dbInst = new databaseC("applesmysql");
-
-  try {
-    var qcrA = crFormKeyArray(formID)
-    if (qcrA) {
-      qcrA.forEach(r => {
-        var qcrRec = {
-          'Question': r.question,
-          'ClauseKey': r.clausekey,
-          'ReplStruct': r.replacement,
-          'CreatedBy': userEmail,
-          'CreatedWhen': todayS,
-          'ModifiedWhen': nowS,
-          'ModifiedBy': userEmail
-        }
-        var rets = writeCk_Question(dbInst, qcrRec)
-      })
-    }
-  } catch (e) {
-    console.log(`In ${fS}: ${e}`);
-    return false
-  }
-  return "Success"
-}
-
-function testWriteAllQuestionsKeys() {
-  var ret = writeAllQuestionsKeys(psFormID);
-  console.log(ret)
-}
-
 const logWriteCk_Question = true;
-function writeCk_Question(dbInst, qcrRec) {
+function writeCk_Question(dbInst,qcrRec){
   var fS = 'writeCk_Question';
-
+  // database structure; change when ck_question changes
   var colS = "Question,ClauseKey,ReplStruct,CreatedBy,CreatedWhen,ModifiedWhen,LastModifiedBy";
   var valA = Object.values(qcrRec);
   var recordS = "";
@@ -256,20 +261,45 @@ function writeCk_Question(dbInst, qcrRec) {
     if (i < (valA.length - 1)) {
       recordS = recordS + "'" + valA[i] + "',";
     } else {
-      recordS = recordS + "'" + valA[i] + "'";
+      recordS = recordS +  "'" + valA[i] + "'";
     }
   }
+try {
+  var qryS = `INSERT INTO ck_question (${colS}) VALUES(${recordS});`;
+  console.log(qryS);
+  var locConn = dbInst.getconn(); // get connection from the instance
+  var stmt = locConn.prepareStatement(qryS);
+  stmt.execute();
+} catch (e) {
+  logWriteCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
+  return "Problem"
+}
+return "Success"
+}
+
+/**
+ * Purpose
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {String} retS - return value
+ */
+const logEmptyCk_Question = true;
+function emptyCk_Question(){
+  var fS = "emptyCk_Question";
+  var dbInst = new databaseC("applesmysql");
   try {
-    var qryS = `INSERT INTO ck_question (${colS}) VALUES(${recordS});`;
-    console.log(qryS);
-    var locConn = dbInst.getconn(); // get connection from the instance
-    var stmt = locConn.prepareStatement(qryS);
-    stmt.execute();
-  } catch (e) {
-    logWriteCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
-    return "Problem"
-  }
-  return "Success"
+  var qryS = `Delete from ck_question where ClauseKey in ('tenName');`;
+  console.log(qryS);
+  var locConn = dbInst.getconn(); // get connection from the instance
+  var stmt = locConn.prepareStatement(qryS);
+  stmt.execute();
+} catch (e) {
+  logEmptyCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
+  return "Problem"
+}
+dbInst.closeconn();
+return "Success"
 }
 
 
