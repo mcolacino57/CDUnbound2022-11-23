@@ -2,7 +2,7 @@ const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
 const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 const userEmail = Session.getActiveUser().getEmail();
-const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidated spreadsheet--general debug
+const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate spreadsheet--general debug
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 
