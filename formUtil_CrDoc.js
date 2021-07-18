@@ -178,7 +178,12 @@ function crFormResponseArray() {
 function testCrFormResponseArray() { var ret = crFormResponseArray(psFormID); console.log(ret) }
 
 
+
 /************************ FORM PREP ******************************************************* */
+/* CHANGE FOR EACH FORM */
+const formID_G = cdFormID;
+const formName_G = 'Create Document';
+
 /**
  * Purpose: Run this function to populate the ck_question table; this should be run
  * whenever a new question is added to the form; START HERE, and use emptyCk_Question if needed
@@ -188,8 +193,6 @@ function testCrFormResponseArray() { var ret = crFormResponseArray(psFormID); co
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
  */
-
-const formID_G = cdFormID;
 function writeAllQuestionsKeys() {
   var fS = 'writeAllQuestionsKeys';
   var dbInst = new databaseC("applesmysql");
@@ -201,6 +204,7 @@ function writeAllQuestionsKeys() {
           'Question': r.question,
           'ClauseKey': r.clausekey,
           'ReplStruct': r.replacement,
+          'FormName'  : formName_G,
           'CreatedBy': userEmail,
           'CreatedWhen': todayS,
           'ModifiedWhen': nowS,
@@ -230,7 +234,6 @@ function crFormKeyArray(formID) {
   form = FormApp.openById(formID);
   var fS = "crFormKeyArray";
   try {
-    form = FormApp.getActiveForm()
     var items = form.getItems();
     var qcrA = [];
     for (var i in items) {
@@ -254,7 +257,7 @@ const logWriteCk_Question = true;
 function writeCk_Question(dbInst,qcrRec){
   var fS = 'writeCk_Question';
   // database structure; change when ck_question changes
-  var colS = "Question,ClauseKey,ReplStruct,CreatedBy,CreatedWhen,ModifiedWhen,LastModifiedBy";
+  var colS = "Question,ClauseKey,ReplStruct,FormName,CreatedBy,CreatedWhen,ModifiedWhen,LastModifiedBy";
   var valA = Object.values(qcrRec);
   var recordS = "";
   for (i = 0; i < valA.length; i++) {

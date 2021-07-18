@@ -48,9 +48,9 @@ function evalProposal() {
     retS = handleTI(dbInst, docInst);
     console.log("TI: " + retS);
     retS = handleJSON(dbInst, docInst);
-    console.log(retS)
+    console.log("JSON: " + retS)
     retS = handleBaseRent(dbInst, docInst, propInst);
-    console.log(retS);
+    console.log("BR: " + retS);
 
   } catch (e) {
     Logger.log(`In ${fS}: ${e}`);
@@ -252,7 +252,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
 function handleExpenses(dbInst, docInst) {
   var fS = "handleExpenses";
   var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, retS, probS;
+  var repClauseS, retS, probS,elRepS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
@@ -264,7 +264,7 @@ function handleExpenses(dbInst, docInst) {
         }
       }
       if (pd.section === "Electric") {
-        if (pd.clausekey === "elecRentIncCharge") {
+        if (pd.proposalclausekey === "elecRentIncCharge") {
           elRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         } else {
           elRepS = pd.clausebody;
@@ -315,11 +315,13 @@ function handleOver(dbInst, docInst) {
       }
     });
     // direct replacements: 
-    var overInsS = "('useType','llName','llbrokerName','commDate','leaseTerm','earlyAccess')";
+    var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
     pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
     pdA.forEach((pd) => {
       if (pd.proposalclausekey === "commDate") {
-        var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
+        // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
+        var dA = pd.proposalanswer.split('-');
+        repS = `${dA[1]}/${dA[2]}/${dA[0]}`;
       } else {
         repS = pd.proposalanswer;
       }
