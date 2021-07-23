@@ -558,7 +558,7 @@ function setProposalCurrent(dbInst, propInst) {
     var qryS1 = `UPDATE proposals SET proposals.current = false;`;
     var stmt = locConn.prepareStatement(qryS1);
     stmt.execute();
-    var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= 'pid';`;
+    var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= '${pid}';`;
     // console.log(qryS);
     stmt = locConn.prepareStatement(qryS2);
     stmt.execute();
