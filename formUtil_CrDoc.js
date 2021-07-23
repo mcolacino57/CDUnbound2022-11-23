@@ -16,7 +16,7 @@ const cdDropdownID = '1941214219';
 /* CHANGE FOR EACH FORM */
 const formID_G = cdFormID;
 const formName_G = 'Create Document';
-const fieldS_G = "";
+const fieldS_G = ""; // Note that this code doesn't delete from ck_question and therefore no need for this
 
 /*Code_Section*/
 /***************Utility ***********************/
@@ -406,7 +406,7 @@ function emptyCk_Question(){
   var fS = "emptyCk_Question";
   var dbInst = new databaseC("applesmysql");
   try {
-  var qryS = `Delete from ck_question where ClauseKey in ('tenName');`;
+  var qryS = `Delete from ck_question where ClauseKey in (${fieldS_G});`;
   console.log(qryS);
   var locConn = dbInst.getconn(); // get connection from the instance
   var stmt = locConn.prepareStatement(qryS);
