@@ -13,31 +13,67 @@ const poBrokerDropdownID = '1181615854';
 const psDropdownID = '1120136627'; // used in fillSpacesDropdown below
 const cdDropdownID = '1941214219';
 
+/* CHANGE FOR EACH FORM */
+const formID_G = cdFormID;
+const formName_G = 'Create Document';
+const fieldS_G = "";
 
-/***************Utility and testing *************/
+/*Code_Section*/
+/***************Utility ***********************/
+/*
+* function returnItemNumber_(items, questionS)
+* function examineForm()
+* function getSectionHeaders(form)
+* function getItemResps(form)
+* function responseByItemID(form, itemtosearch)
+ */
+
 /**
  * Purpose
  *
- * @param  {string} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {string} retS - return value
+ * @param  {objects} items - all the items in a form
+ * @param  {string} questionS - an question string 
+ * @return {number} # - return value; index or -1 if not found (error)
  */
 
-function extractItemID(f) {
-  var items = f.getItems();
-  for (var i in items) {
-    console.log(items[i].getTitle() + ': ' + items[i].getId());
+function returnItemNumber_(items, questionS) {
+  for (j = 0; j < items.length; j += 1) {
+    if (items[j].getTitle() == questionS) { return j }
+  }
+  return false
+}
+
+// logs all of the titles of items in a form 
+function examineForm(f) {
+  var fitems = f.getItems();
+  for (var j = 0; j < fitems.length; j++) {
+    var title = fitems[j].getTitle()
+    var id = fitems[j].getId();
+    var itemTypeIs = fitems[j].getType();
+    var typeS = itemTypeIs.toString();
+    console.log(`Item title for: #${j} - ${title} ID: ${id} - type ${typeS}`);
   }
 }
 
-function testExtractItemID() {
-  var f = FormApp.openById(cdFormID);
-  var ret = extractItemID(f);
+/**
+ * Purpose: get all the section headers for the form
+ *
+ * @param {object} form - the form
+ * @return {array} retA - list of all the section headers
+ */
+
+ function getSectionHeaders(form) {
+  var fitems = form.getItems();
+  for (var j = 0; j < fitems.length; j++) {
+    var itm = fitems[j];
+    var itemTypeIs = itm.getType();
+    if (itemTypeIs == FormApp.ItemType.SECTION_HEADER) {
+      var secItem = itm.asSectionHeaderItem();
+      var questionS = secItem.getTitle();
+      console.log(`Section item number ${j} is: ${questionS}`);
+    }
+  }
 }
-
-
-
-
 /**
  * Purpose: get a list of items from the form; assumes just one response. Change if there are multiple responsess
  * see getProto1Responses
@@ -60,8 +96,92 @@ function getItemResps(form) {
   return retA
 }
 
+/**
+ * Purpose: get a list of items from the form; assumes one or more response. Change if there are multiple responsess
+ * @param  {object} form 
+ * @return {object[]} retA - return all items from the form response
+ *  
+ **/
+ function getItemRespsMulti(form) {
+  try {
+    var formResponses = form.getResponses(); // assumed to be only one
+    if (formResponses.length == 0) { throw new Error("getItemResps: formResponses has no responses") }
+    // return the last one
+    formResponses.forEach((r)=>{
+      var retA = formResponse.getItemResponses(); // array of items; which are questions and answers
+    })
+    if (formResponses.length > 1) { throw new Error("getItemResps: formResponses has too many responses") }
+    var formResponse = formResponses[0]; //  
+    var retA = formResponse.getItemResponses(); // array of items; which are questions and answers
+  }
+  catch (err) {
+    console.log(`getItemResps: ${err}`);
+    return { result: "Not Found" }
+  }
+  return retA
+}
 
-/*************************DROPDOWN INITIALIZATION******* */
+function responseByItemID(form, itemtosearch) {
+  var formResponse = form.getResponses()[0]; // only expecting one response
+  // loop through the form responses
+  // get the item responses
+  var itemResponses = formResponse.getItemResponses();
+  for (var j = 0; j < itemResponses.length; j++) {
+    var itemResponse = itemResponses[j];
+    // test for the item number = searchterm
+    if (itemResponse.getItem().getId() == itemtosearch) {
+      return (itemResponse.getResponse())
+    }
+  }
+}
+
+
+/*End Code_Section*/
+
+/*Code_Section*/
+/**********************Tests ************************************************ */
+/**
+ * function testFillSpacesDropdown() 
+ * function testDisplayTitlesAndIDs()
+ * function testCrFormResponseArray()
+ * function testExamineForm()
+ */
+
+ function testFillSpacesDropdown() {
+  var retS = fillSpacesDropdown_(formID_G, poDropdownID);
+}
+
+function testDisplayTitlesAndIDs() {
+  var retS = displayTitlesAndIDS_(formID_G);
+  console.log(retS)
+}
+function testCrFormResponseArray() {
+  var f = FormApp.openById(formID_G);
+  var ret = crFormResponseArray(f); console.log(ret)
+}
+
+function testExamineForm() {
+  var f = FormApp.openById(formID_G);
+  var ret = examineForm(f);
+}
+
+function testGetItemRespsMulti(){
+  var f = FormApp.openById(formID_G);
+  var ret = getItemRespsMulti(f)
+}
+
+/*End Code_Section*/
+
+/* Code_Section */
+
+/*************************FILL DROPDOWNS ********************* */
+/**
+ * function fillProposalDropdown_(dbInst,formID, dropDownID)
+ * function runFillProposalDropDown()
+ * function displayTitlesAndIDS_(formID)
+ * function testPrintTitlesAndIDs() 
+ * function crFormResponseArray(form)
+ */
 
 /**
  * Purpose: take an array of strings and populate a dropdown in formID
@@ -118,7 +238,7 @@ function fillSpacesDropdown_(formID, dropDownID) {
   var retS;
   try {
     // get proposal array from db
-    var asfsfA = getSpaceDisplay("mcolacino@squarefoot.com");  // gcloudSQL modified to this 210708
+    var asfsfA = getSpaceDisplay(userEmail);  // gcloudSQL modified to this 210708
     var ddvaluesA = asfsfA.map(pr => {
       return pr.sdesc;
     })
@@ -141,9 +261,11 @@ function fillSpacesDropdown_(formID, dropDownID) {
   return retS
 }
 
+/*
 function runFillSpacesDropdown() {
   var retS = fillSpacesDropdown_(psFormID, psDropdownID);
 }
+*/
 
 function displayTitlesAndIDS_(formID) {
   var form = FormApp.openById(formID);
@@ -154,14 +276,11 @@ function displayTitlesAndIDS_(formID) {
 }
 
 function testDisplayTitlesAndIDs() {
-  var retS = displayTitlesAndIDS_(cdFormID);
- 
+  var retS = displayTitlesAndIDS_(formID_G);
 }
 
-
-function crFormResponseArray() {
+function crFormResponseArray(form) {
   // Use the global form ID and log the responses to each question.
-  var form = FormApp.openById(cdFormID);
   var respA = [];
   var formResponses = form.getResponses();
   // console.log("Number of responses is %s ", formResponses.length)
@@ -175,15 +294,9 @@ function crFormResponseArray() {
   }
   return respA
 }
-function testCrFormResponseArray() { var ret = crFormResponseArray(psFormID); console.log(ret) }
-
 
 
 /************************ FORM PREP ******************************************************* */
-/* CHANGE FOR EACH FORM */
-const formID_G = cdFormID;
-const formName_G = 'Create Document';
-
 /**
  * Purpose: Run this function to populate the ck_question table; this should be run
  * whenever a new question is added to the form; START HERE, and use emptyCk_Question if needed
@@ -193,6 +306,7 @@ const formName_G = 'Create Document';
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
  */
+const logWriteAllQuestionsKeys = false;
 function writeAllQuestionsKeys() {
   var fS = 'writeAllQuestionsKeys';
   var dbInst = new databaseC("applesmysql");
@@ -216,9 +330,9 @@ function writeAllQuestionsKeys() {
     }
   } catch (err) {
     console.log(`In ${fS}: ${err}`);
-    return "Problem"
+    return false
   }
-  return "Success"
+  return true
 }
 
 /**
@@ -299,10 +413,10 @@ function emptyCk_Question(){
   stmt.execute();
 } catch (e) {
   logEmptyCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
-  return "Problem"
+  return false
 }
 dbInst.closeconn();
-return "Success"
+return true
 }
 
 
