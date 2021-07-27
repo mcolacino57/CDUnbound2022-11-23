@@ -22,22 +22,17 @@ function onSubmit() {
 function evalProposal() {
   const fS = "evalProposal";
   const pQS = "Proposal Name?"; // proposal question
-  var propS, retS;
+  var propS, retS, respA, problemS, rA;
   try {
     var dbInst = new databaseC("applesmysql");
     var docInst = new docC(docID, foldID);
-    // get responses into an array of objects of the form [{"question": qS, "answer": aS},...]
-    var f = FormApp.openById(cdFormID);
-    var respA = crFormResponseArray(f);
-    // get proposal name
-    var propO = respA.find((responseObj) => responseObj.question === pQS);
-    if (!propO) {
-      propS = "No proposal in form";
-      throw new Error('missing proposal');
-    }
-    else { propS = propO.answer; }
+    // get proposal name and returns [false,false] if there is a problem--in status.gs
+    var [propID, propS] = getCurrPropID_(dbInst, userEmail);    
     var propInst = new proposalC(dbInst, propS);
-    retS = setProposalCurrent(dbInst, propInst)
+    var r = setProposalCurrent(dbInst, propInst);
+    if (!r) {
+      throw new Error(`can't set proposal ${propS} to current`)
+    }
 
     retS = handleExpenses(dbInst, docInst);
     console.log("Expenses: " + retS);
@@ -52,8 +47,8 @@ function evalProposal() {
     retS = handleBaseRent(dbInst, docInst, propInst);
     console.log("BR: " + retS);
 
-  } catch (e) {
-    Logger.log(`In ${fS}: ${e}`);
+  } catch (err) {
+    Logger.log(`In ${fS}: ${err}`);
     return "Problem"
   }
   docInst.saveAndCloseTemplate();
@@ -252,7 +247,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
 function handleExpenses(dbInst, docInst) {
   var fS = "handleExpenses";
   var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, retS, probS,elRepS;
+  var repClauseS, retS, probS, elRepS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
