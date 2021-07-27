@@ -1,3 +1,5 @@
+// 210727 10:39
+
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
 const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
@@ -385,9 +387,75 @@ function testHandleBR() {
   var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
   var docInst = new docC(docID, foldID);
   var retS = handleBaseRent(dbInst, docInst, propInst);
-
 }
 
+/**
+ * Purpose: Before running an attempt to create a proposal, test to see that all the major
+ * categories have been filled in. Should modifiy if additional clauses  sections are added.
+ * Also should check to see where the proposal is located and omit certain checks, for example 
+ * parking in NY. Also note that Premises is omitted even though its a legitimate section
+ * since it's set entirely through the survey_spaces table.
+ * 
+ * Also note that this uses the view prop_detail_ex which joins the clause table
+ * with the prop_detail table. This is where the 
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {boolean} true/false
+ */
+const logChkMajorPropDetailCategories=true;
+function chkMajorPropDetailCategories(propID) {
+  try {
+    var fS = "chkMajorPropDetailCategories", qryS = "";
+    var incSec = [], excSec = [];;
+    var results,ctr;
+    
+    const dbInst = new databaseC("applesmysql");
+    var locConn = dbInst.getconn(); // get connection from the instance
+    var stmt = locConn.createStatement();
+    stmt.setMaxRows(maxRows);
+    // If additional sections get added, add to this list
+    var sectionSA = [
+      "Date",
+      "Electric",
+      "Overview",
+      "OperatingExpenses",
+      "RealEstateTaxes",
+      "Security",
+      "TenantImprovements",
+      "Use"
+    ];
+    sectionSA.forEach((s) => {
+      qryS = `SELECT * FROM prop_detail_ex where ProposalID = '${propID}' AND section = '${s}';`;
+      results = stmt.executeQuery(qryS);
+      results.next() ? incSec.push(s) : excSec.push(s);
+    });
+    logChkMajorPropDetailCategories ? console.log(`in: ${incSec} out: ${excSec}`) : true;
+    return [incSec,excSec,excSec.length]
+  }
+  catch (err) {
+    console.log(`In ${fS}: ${err}`);
+    return false
+  }
+}
+
+
+
+function runTests() {
+  var dbInst = new databaseC("applesmysql");
+  var form = FormApp.openById(formID_G);
+  var dupePropS = "Tootco at 6 East 45"
+  var userS = userEmail;
+  var propID = "50fcd535-edb2-11eb-93f1-42010a800005";
+  const test = new UnitTestingApp();
+  test.enable(); // tests will run below this line
+  test.runInGas(true);
+  if (test.isEnabled) {
+    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> ${propID}`);
+
+   
+  }
+}
 
 /************************Utilities *********************** */
 const curr_formatter = new Intl.NumberFormat('en-US', {
