@@ -134,8 +134,10 @@ function handleBaseRent(dbInst, docInst, propInst) {
  */
 function handleJSON(dbInst, docInst) {
   var fS = "handleJSON", probS, retS;
+  var userPrefixS = userEmail.split('@')[0];
+  var fileName = userPrefixS + ".json";
   try {
-    var fileName = "mcolacino.json";
+    // var fileName = "mcolacino.json";
     var files = DriveApp.getFilesByName(fileName);
     if (files.hasNext()) {
       var file = files.next();
