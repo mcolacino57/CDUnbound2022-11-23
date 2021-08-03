@@ -1,5 +1,5 @@
 const ssStatus = '1uPDFoVLAt6dtQsdbTO_VJ8jhwr3l44Q713gta49vWto';
-Logger = BetterLog.useSpreadsheet(ssStatus);
+//Logger = BetterLog.useSpreadsheet(ssStatus);
 
 /* 
 Before beginning to create a document, this code should run to give a "report" inside
@@ -12,7 +12,6 @@ function getCurrPropID_() {
   var fS = "getCurrPropID";
   var recA = [];
   try {
-    // var pid = propInst.getpropID();
     var dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
     var qryS = `SELECT proposals.ProposalID,proposals.ProposalName FROM proposals WHERE proposals.current = true ;`;

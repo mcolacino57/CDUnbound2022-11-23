@@ -16,6 +16,9 @@ function onSubmit() {
   var retS = evalProposal();
 }
 
+
+
+
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
  *
@@ -441,6 +444,29 @@ function chkMajorPropDetailCategories(propID) {
   }
 }
 
+/**
+ * Purpose
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {String} retS - return value
+ */
+function logStatusofData(propID){
+  var [incSec,excSec,excludedLen] = chkMajorPropDetailCategories(propID);
+  if(excludedLen===0){
+    Logger.log(`In CD Bound / logStatusofData all major sections included`);
+    return true
+  }
+  else {
+    excSec.forEach((sec) => {
+      Logger.log(`Missing sections: ${sec}`);
+    });
+    return false
+  }
+
+}
+
+
 
 
 function runTests() {
@@ -454,6 +480,7 @@ function runTests() {
   test.runInGas(true);
   if (test.isEnabled) {
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> ${propID}`);
+    test.assert(logStatusofData(propID),`logStatusofData, propID ${propID}`);
 
    
   }
