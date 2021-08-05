@@ -1,3 +1,11 @@
+/*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
+testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
+testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,tHandleOE,
+testHandleBR*/
+
+/*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
+ getCurrPropID_,setProposalCurrent,readFromTable,DriveApp,readInListFromTable,
+ UnitTestingApp,maxRows*/
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -10,10 +18,12 @@ const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Ge
 
 
 
+// eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
 function onSubmit() {
-  var retS = evalProposal();
+  var ret = evalProposal();
+  return ret
 }
 
 
@@ -26,13 +36,13 @@ function onSubmit() {
  */
 function evalProposal() {
   const fS = "evalProposal";
-  const pQS = "Proposal Name?"; // proposal question
-  var propS, retS, respA, problemS, rA;
+  var retS;
   try {
     var dbInst = new databaseC("applesmysql");
     var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
-    var [propID, propS] = getCurrPropID_(dbInst, userEmail);    
+    // eslint-disable-next-line no-unused-vars
+    var [propID, propS] = getCurrPropID_(dbInst, userEmail);
     var propInst = new proposalC(dbInst, propS);
     var r = setProposalCurrent(dbInst, propInst);
     if (!r) {
@@ -73,17 +83,16 @@ function evalProposal() {
 
 var logHandleBaseRent = false;
 function handleBaseRent(dbInst, docInst, propInst) {
-  var offsetObj = {}, tempS = "", offset = 0;
+  var offsetObj = {}, offset = 0;
   // get the local doc body from the doc instance
   var doc = docInst.locBody;
   // Find the replacement text
   var rgel = doc.findText("<<BaseRentalRate>>");
   var el = rgel.getElement().getParent(); // take the found element and get its parent
-  var elType = el.getType();
   var loopCtl = el.toString()  // use the type of the parent (as string) to start the loop
   while (loopCtl != "BODY_SECTION") { // stop when you get to the body section
-    par = el.getParent();
-    parType = par.getType(); // put parent type into var
+    var par = el.getParent();
+    var parType = par.getType(); // put parent type into var
     el = par; // make the parent into the current element, el 
     offset = el.getParent().getChildIndex(el); // go up and down to count siblings
     loopCtl = parType.toString();
@@ -107,18 +116,19 @@ function handleBaseRent(dbInst, docInst, propInst) {
   var t = [["Begin Date", "End Date", "Rent PSF"]];
   // for all the base records, push the created row onto the table
   for (var j = 0; j < records.length; j++) {
-    row = [
+    var row = [
       Utilities.formatDate(new Date(records[j].begindate), "GMT+1", "MMMM d, yyyy"),
       Utilities.formatDate(new Date(records[j].enddate), "GMT+1", "MMMM d, yyyy"),
       curr_formatter.format(records[j].rentpsf)
     ]
     t.push(row);
   }
-  if (logHandleBaseRent) { console.log(t) };
+  if (logHandleBaseRent) { console.log(t) }
   c0.insertTable(2, t); // insert the table at c0 created above, third paragraph
   var s = c0.getChild(1).getType().toString();
-  var s = c0.getChild(2).getType().toString();
-  var s = c0.getChild(3).getType().toString();
+  s = c0.getChild(2).getType().toString();
+  // eslint-disable-next-line no-unused-vars
+  s = c0.getChild(3).getType().toString();
   // c0.getChild(2).setColumnWidth(0, 80);
   // c0.getChild(2).setColumnWidth(1, 80);
   // c0.getChild(2).setColumnWidth(2, 70);
@@ -136,7 +146,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
  * @return {String} retS - return value
  */
 function handleJSON(dbInst, docInst) {
-  var fS = "handleJSON", probS, retS;
+  var fS = "handleJSON", probS;
   var userPrefixS = userEmail.split('@')[0];
   var fileName = userPrefixS + ".json";
   try {
@@ -148,13 +158,13 @@ function handleJSON(dbInst, docInst) {
       var json = JSON.parse(content);
     }
     if (json.name) {
-      retS = updateTemplateBody("<<BrokerName>>", json.name, docInst)
+      updateTemplateBody("<<BrokerName>>", json.name, docInst)
     }
     if (json.email) {
-      retS = updateTemplateBody("<<BrokerEmail>>", json.email, docInst);
+      updateTemplateBody("<<BrokerEmail>>", json.email, docInst);
     }
     if (json.license_num) {
-      retS = updateTemplateBody("<<BrokerageLicense>>", json.license_num, docInst);
+      updateTemplateBody("<<BrokerageLicense>>", json.license_num, docInst);
     }
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -173,7 +183,7 @@ function handleJSON(dbInst, docInst) {
  * @return {String} retS - return value
  */
 function handleTI(dbInst, docInst) {
-  var fS = "handleTI", probS, retS, repClauseS;
+  var fS = "handleTI", probS, repClauseS;
   var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
@@ -181,7 +191,7 @@ function handleTI(dbInst, docInst) {
     pdA.forEach((pd) => {
       if (pd.proposalclausekey === "tiAllow") {
         var tiDollars = curr_formatter.format(pd.proposalanswer);
-        retS = updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
+        updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
       } else {
         repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         tiTerms = tiTerms + repClauseS + "\n\n"
@@ -189,7 +199,7 @@ function handleTI(dbInst, docInst) {
     });
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
     if (tiTerms != "") { tiTerms = tiTerms.replace(/\n\n$/, ''); }
-    retS = updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
+    updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -208,31 +218,22 @@ function handleTI(dbInst, docInst) {
  * @return {String} retS - return value
  */
 function handleTenAndPrem(dbInst, docInst, propIDS) {
-  var fS = "handleTenAndPrem", retS, probS;
+  var fS = "handleTenAndPrem", probS;
   try {
     var jsonyn = false;
     var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, jsonyn);
     var spid = retA[0].spaceidentity;
     var tenantNameS = retA[0].tenantname;
-    retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid, jsonyn);
+    retA = readFromTable(dbInst, "survey_spaces", "identity", spid, jsonyn);
     var spA = retA[0]
     retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
     var premClauseBody = retA[0].clausebody;
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
-    if (spA.floor) {
-      premClauseBody = premClauseBody.replace("<<Floor>>", spA.floor);
-    } else {
-      premClauseBody = premClauseBody.replace("located on floor <<Floor>> of the Building", "");
-    }
-    if (spA.suite) {
-      premClauseBody = premClauseBody.replace("<<SuiteNumber>>", spA.suite);
-    } else {
-      premClauseBody = premClauseBody.replace("known as suite <<SuiteNumber>>", "");
-    }
-    retS = updateTemplateBody("<<Premises>>", premClauseBody, docInst)
-    retS = updateTemplateBody("<<Address>>", spA.address, docInst);
-    retS = updateTemplateBody("<<ClientCompany>>", tenantNameS, docInst);
+    premClauseBody = premClauseBody.replace("<<FloorAndSuite>>", spA.floorandsuite);
+    updateTemplateBody("<<Premises>>", premClauseBody, docInst)
+    updateTemplateBody("<<Address>>", spA.address, docInst);
+    updateTemplateBody("<<ClientCompany>>", tenantNameS, docInst);
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -277,7 +278,7 @@ function handleExpenses(dbInst, docInst) {
         }
       }
       if (pd.section === "RealEstateTaxes") {
-        retRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
+        pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         retS = updateTemplateBody("<<RealEstateTaxes>>", elRepS, docInst);
         if (retS != "Success") {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
@@ -352,16 +353,17 @@ function testHandleOver() {
   var ret = handleOver(dbInst, docInst);
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
+  return ret
 }
 
 function tHandleOE() {
   var dbInst = new databaseC("applesmysql");
   var docInst = new docC(docID, foldID);
-  var ds = docInst.ds;
   var ret = handleExpenses(dbInst, docInst);
   // Logger.log(ret)
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
+  return ret
 }
 
 /**
@@ -377,10 +379,10 @@ function updateTemplateBody(replStructure, replText, docInst) {
   //Then we call replaceText method
   try {
     docInst.locBody.replaceText(replStructure, replText);
-    var debugS = docInst.locBody.getText();
-    // console.log(debugS)
+    
+    //console.log(docInst.locBody.getText());
   } catch (err) {
-    probS = `In ${fS}: unable to update ${replStructure}`;
+    var probS = `In ${fS}: unable to update ${replStructure}`;
     Logger.log(probS);
     return probS
   }
@@ -391,7 +393,8 @@ function testHandleBR() {
   var dbInst = new databaseC("applesmysql");
   var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
   var docInst = new docC(docID, foldID);
-  var retS = handleBaseRent(dbInst, docInst, propInst);
+  var ret = handleBaseRent(dbInst, docInst, propInst);
+  return ret
 }
 
 /**
@@ -408,13 +411,13 @@ function testHandleBR() {
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {boolean} true/false
  */
-const logChkMajorPropDetailCategories=true;
+const logChkMajorPropDetailCategories = true;
 function chkMajorPropDetailCategories(propID) {
   try {
     var fS = "chkMajorPropDetailCategories", qryS = "";
-    var incSec = [], excSec = [];;
-    var results,ctr;
-    
+    var incSec = [], excSec = [];
+    var results;
+
     const dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
     var stmt = locConn.createStatement();
@@ -436,7 +439,7 @@ function chkMajorPropDetailCategories(propID) {
       results.next() ? incSec.push(s) : excSec.push(s);
     });
     logChkMajorPropDetailCategories ? console.log(`in: ${incSec} out: ${excSec}`) : true;
-    return [incSec,excSec,excSec.length]
+    return [incSec, excSec, excSec.length]
   }
   catch (err) {
     console.log(`In ${fS}: ${err}`);
@@ -451,9 +454,10 @@ function chkMajorPropDetailCategories(propID) {
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
  */
-function logStatusofData(propID){
-  var [incSec,excSec,excludedLen] = chkMajorPropDetailCategories(propID);
-  if(excludedLen===0){
+function logStatusofData(propID) {
+  // eslint-disable-next-line no-unused-vars
+  var [incSec, excSec, excludedLen] = chkMajorPropDetailCategories(propID);
+  if (excludedLen === 0) {
     Logger.log(`In CD Bound / logStatusofData all major sections included`);
     return true
   }
@@ -470,19 +474,19 @@ function logStatusofData(propID){
 
 
 function runTests() {
-  var dbInst = new databaseC("applesmysql");
-  var form = FormApp.openById(formID_G);
-  var dupePropS = "Tootco at 6 East 45"
-  var userS = userEmail;
+  //var dbInst = new databaseC("applesmysql");
+  //var form = FormApp.openById(formID_G);
+  //var dupePropS = "Tootco at 6 East 45"
+  //var userS = userEmail;
   var propID = "50fcd535-edb2-11eb-93f1-42010a800005";
   const test = new UnitTestingApp();
   test.enable(); // tests will run below this line
   test.runInGas(true);
   if (test.isEnabled) {
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> ${propID}`);
-    test.assert(logStatusofData(propID),`logStatusofData, propID ${propID}`);
+    test.assert(logStatusofData(propID), `logStatusofData, propID ${propID}`);
 
-   
+
   }
 }
 
@@ -493,11 +497,11 @@ const curr_formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2
 })
 
-const percent_formatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-})
+// const percent_formatter = new Intl.NumberFormat('en-US', {
+//   style: 'percent',
+//   minimumFractionDigits: 2,
+//   maximumFractionDigits: 2
+// })
 
 function sortDate(r1, r2) {
   if (r1.BeginDate < r2.BeginDate)

@@ -1,3 +1,9 @@
+/*exported getItemResps,testCrFormResponseArray,testDisplayTitlesAndIDs,testExamineForm ,
+runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,writeAllQuestionsKeys,emptyCk_Question,
+setOverviewDesc */
+/*global Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
+cdFormID,poDropdownID,cdDropdownID,getSpaceDisplay
+*/
 // 210727 9:55
 
 /* CHANGE FOR EACH FORM */
@@ -15,21 +21,6 @@ const fieldS_G = ""; // Note that this code doesn't delete from ck_question and 
 * function responseByItemID(form, itemtosearch)
  */
 
-/**
- * Purpose
- *
- * @param  {objects} items - all the items in a form
- * @param  {string} questionS - an question string 
- * @return {number} # - return value; index or -1 if not found (error)
- */
-
-function returnItemNumber_(items, questionS) {
-  for (j = 0; j < items.length; j += 1) {
-    if (items[j].getTitle() == questionS) { return j }
-  }
-  return false
-}
-
 // logs all of the titles of items in a form 
 function examineForm(f) {
   var fitems = f.getItems();
@@ -42,25 +33,6 @@ function examineForm(f) {
   }
 }
 
-/**
- * Purpose: get all the section headers for the form
- *
- * @param {object} form - the form
- * @return {array} retA - list of all the section headers
- */
-
- function getSectionHeaders(form) {
-  var fitems = form.getItems();
-  for (var j = 0; j < fitems.length; j++) {
-    var itm = fitems[j];
-    var itemTypeIs = itm.getType();
-    if (itemTypeIs == FormApp.ItemType.SECTION_HEADER) {
-      var secItem = itm.asSectionHeaderItem();
-      var questionS = secItem.getTitle();
-      console.log(`Section item number ${j} is: ${questionS}`);
-    }
-  }
-}
 /**
  * Purpose: get a list of items from the form; assumes just one response. Change if there are multiple responsess
  * see getProto1Responses
@@ -83,46 +55,6 @@ function getItemResps(form) {
   return retA
 }
 
-/**
- * Purpose: get a list of items from the form; assumes one or more response. Change if there are multiple responsess
- * @param  {object} form 
- * @return {object[]} retA - return all items from the form response
- *  
- **/
- function getItemRespsMulti(form) {
-  try {
-    var formResponses = form.getResponses(); // assumed to be only one
-    if (formResponses.length == 0) { throw new Error("getItemResps: formResponses has no responses") }
-    // return the last one
-    formResponses.forEach((r)=>{
-      var retA = formResponse.getItemResponses(); // array of items; which are questions and answers
-    })
-    if (formResponses.length > 1) { throw new Error("getItemResps: formResponses has too many responses") }
-    var formResponse = formResponses[0]; //  
-    var retA = formResponse.getItemResponses(); // array of items; which are questions and answers
-  }
-  catch (err) {
-    console.log(`getItemResps: ${err}`);
-    return { result: "Not Found" }
-  }
-  return retA
-}
-
-function responseByItemID(form, itemtosearch) {
-  var formResponse = form.getResponses()[0]; // only expecting one response
-  // loop through the form responses
-  // get the item responses
-  var itemResponses = formResponse.getItemResponses();
-  for (var j = 0; j < itemResponses.length; j++) {
-    var itemResponse = itemResponses[j];
-    // test for the item number = searchterm
-    if (itemResponse.getItem().getId() == itemtosearch) {
-      return (itemResponse.getResponse())
-    }
-  }
-}
-
-
 /*End Code_Section*/
 
 /*Code_Section*/
@@ -135,7 +67,8 @@ function responseByItemID(form, itemtosearch) {
  */
 
  function testFillSpacesDropdown() {
-  var retS = fillSpacesDropdown_(formID_G, poDropdownID);
+   var ret = fillSpacesDropdown_(formID_G, poDropdownID);
+   return ret
 }
 
 function testDisplayTitlesAndIDs() {
@@ -150,12 +83,10 @@ function testCrFormResponseArray() {
 function testExamineForm() {
   var f = FormApp.openById(formID_G);
   var ret = examineForm(f);
+  return ret
 }
 
-function testGetItemRespsMulti(){
-  var f = FormApp.openById(formID_G);
-  var ret = getItemRespsMulti(f)
-}
+
 
 /*End Code_Section*/
 
@@ -189,10 +120,8 @@ function fillProposalDropdown_(dbInst, formID, dropDownID) {
 
     // get the dropdown from the form
     var dd = FormApp.openById(formID).getItemById(dropDownID);
-    var itemT = dd.getType();
     if (dd.getType() != FormApp.ItemType.LIST) {
       throw new Error(`Item: ${dropDownID} is not a list!`);
-      return false
     }
     else {
       dd.asListItem().setChoiceValues(ddvaluesA);
@@ -231,10 +160,8 @@ function fillSpacesDropdown_(formID, dropDownID) {
     })
     // get the dropdown from the form
     var dd = FormApp.openById(formID).getItemById(dropDownID);
-    var itemT = dd.getType();
     if (dd.getType() != FormApp.ItemType.LIST) {
       throw new Error(`Item: ${dropDownID} is not a list!`);
-      return false
     }
     else {
       dd.asListItem().setChoiceValues(ddvaluesA);
@@ -260,10 +187,6 @@ function displayTitlesAndIDS_(formID) {
   for (var i in items) {
     console.log(items[i].getTitle() + ': ' + items[i].getId() + " / " + items[i].getHelpText());  // HelpText == Description
   }
-}
-
-function testDisplayTitlesAndIDs() {
-  var retS = displayTitlesAndIDS_(formID_G);
 }
 
 function crFormResponseArray(form) {
@@ -293,7 +216,6 @@ function crFormResponseArray(form) {
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
  */
-const logWriteAllQuestionsKeys = false;
 function writeAllQuestionsKeys() {
   var fS = 'writeAllQuestionsKeys';
   var dbInst = new databaseC("applesmysql");
@@ -332,7 +254,7 @@ function writeAllQuestionsKeys() {
 key: <clausekey> / replacement: <replacement> */
 // small change to test commit
 function crFormKeyArray(formID) {
-  form = FormApp.openById(formID);
+  var form = FormApp.openById(formID);
   var fS = "crFormKeyArray";
   try {
     var items = form.getItems();
@@ -361,7 +283,7 @@ function writeCk_Question(dbInst,qcrRec){
   var colS = "Question,ClauseKey,ReplStruct,FormName,CreatedBy,CreatedWhen,ModifiedWhen,LastModifiedBy";
   var valA = Object.values(qcrRec);
   var recordS = "";
-  for (i = 0; i < valA.length; i++) {
+  for (var i = 0; i < valA.length; i++) {
     if (i < (valA.length - 1)) {
       recordS = recordS + "'" + valA[i] + "',";
     } else {

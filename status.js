@@ -1,4 +1,5 @@
-const ssStatus = '1uPDFoVLAt6dtQsdbTO_VJ8jhwr3l44Q713gta49vWto';
+/*global databaseC,Logger*/
+/*exported executeStatus*/
 //Logger = BetterLog.useSpreadsheet(ssStatus);
 
 /* 
@@ -15,7 +16,7 @@ function getCurrPropID_() {
     var dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
     var qryS = `SELECT proposals.ProposalID,proposals.ProposalName FROM proposals WHERE proposals.current = true ;`;
-    stmt = locConn.prepareStatement(qryS);
+    var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
     while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
@@ -39,7 +40,7 @@ function extractPropDetail_(propID) {
     var dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
     var qryS = `SELECT section,ProposalQuestion,ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
-    stmt = locConn.prepareStatement(qryS);
+    var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
     var dataA = [];
@@ -63,6 +64,7 @@ function extractPropDetail_(propID) {
 function executeStatus() {
   var retA = getCurrPropID_();
   var ret = extractPropDetail_(retA[0]);
+  return ret
   // console.log(ret);
 
 }
