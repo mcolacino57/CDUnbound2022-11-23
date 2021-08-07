@@ -1,6 +1,6 @@
 /*global Logger,databaseC,*/
 /*exported getProposalNamesAndIDs,getSpaceDisplay,getProposalData,
-setProposalCurrent */
+readInListFromTable,setProposalCurrent */
 /****************Called from other gs files*************** */
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
@@ -266,8 +266,82 @@ function setProposalCurrent(dbInst, propInst) {
     return "Problem"
   }
   return "Success"
-
 }
+
+/**
+ * Purpose: 
+ *
+ * @param  {Object} dbInst - instance of database class
+ * @param {String} tableNameS - table to read
+ * @param {String} colS - column to select on
+ * @param {String} inListS - string in IN SQL format
+ * @return {String} retS - return value
+ * 
+ * return value is in the form: 
+ */
+
+ const logReadInListFromTable = false;
+ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
+   var fS = "readInListFromTable";
+   var logLoc = logReadInListFromTable;
+   var problemS;
+   /*********connect to database ************************************ */
+   try {
+     var locConn = dbInst.getconn(); // get connection from the instance
+     logLoc ? console.log(locConn.toString()) : true;
+     var stmt = locConn.createStatement();
+     stmt.setMaxRows(maxRows);
+   } catch (err) {
+     problemS = `In ${fS} issue getting connection or creating statement: ${err}`;
+     console.log(problemS);
+     return problemS
+   }
+   /******************extract rows that meet select criteria ********* */
+   var qryS = `SELECT * FROM ${tableNameS} where ${colS} IN ${inListS};`;
+   logLoc ? console.log(qryS) : true;
+   try {
+     var results = stmt.executeQuery(qryS);
+     var numCols = results.getMetaData().getColumnCount();
+   } catch (err) {
+     problemS = `In ${fS} problem with executing ${colS} = ${inListS} query : ${err}`;
+     console.log(problemS);
+     return problemS
+   }
+   var dataA = [];
+   while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
+     var recA = [];
+     for (var col = 0; col < numCols; col++) {
+       recA.push(results.getString(col + 1));  // create inner array(s)
+     }
+     dataA.push(recA); // push inner array into outside array
+   }
+   // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
+   logLoc ? console.log(dataA) : true;
+ 
+   /**************************now get the header names ************************** */
+   qryS = `SHOW COLUMNS FROM ${tableNameS};`
+   try {
+     var stmt2 = locConn.createStatement();
+     var colA = [];
+     var cols = stmt2.executeQuery(qryS);
+     while (cols.next()) {
+       colA.push(cols.getString(1));
+     }
+   } catch (err) {
+     problemS = `In ${fS} problem with executing query : ${err}`
+     console.log(problemS);
+     return problemS
+   }
+ 
+   var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
+   logLoc ? console.log(rowA) : true;
+ 
+   results.close();
+   stmt.close();
+   stmt2.close();
+ 
+   return rowA
+ }
 
 
 
