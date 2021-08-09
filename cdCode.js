@@ -16,8 +16,6 @@ const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 
-
-
 // eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
@@ -26,9 +24,6 @@ function onSubmit() {
   return ret
 }
 
-
-
-
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
  *
@@ -36,15 +31,15 @@ function onSubmit() {
  */
 function evalProposal() {
   const fS = "evalProposal";
-  var retS;
+  var retS,propID,propS;
   try {
     var dbInst = new databaseC("applesmysql");
     var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
-    var [propID, propS] = getCurrPropID_(dbInst, userEmail);
-    var propInst = new proposalC(dbInst, propS);
-    var r = setProposalCurrent(dbInst, propInst);
+    [propID, propS] = getCurrPropID_(dbInst, userEmail);
+    var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
+    var r = setProposalCurrent(dbInst, propID);  // in gcloudSQL
     if (!r) {
       throw new Error(`can't set proposal ${propS} to current`)
     }
@@ -73,16 +68,20 @@ function evalProposal() {
 
 
 /*********** handleBaseRent********/
+var logHandleBaseRent = false;
+
 /**
  * Purpose: Handle base rent
  *
+ * @param {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - document instance
- * @param  {Number} spaceID - integer index into the tourbook table
+ * @param  {String} propID - proposal ID
  * @return {String} updateS - return value
  */
 
-var logHandleBaseRent = false;
-function handleBaseRent(dbInst, docInst, propInst) {
+function handleBaseRent(dbInst, docInst, propID) {
+  var locLog = logHandleBaseRent;
+  try {
   var offsetObj = {}, offset = 0;
   // get the local doc body from the doc instance
   var doc = docInst.locBody;
@@ -108,7 +107,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
   // go to the DB and get the proposed rental rates associated with this spaceID
   // var retBR = getBySpaceID(spaceID, "proposedrent");
   var jsonyn = false;
-  var records = readFromTable(dbInst, "base_rent", "ProposalID", propInst.getpropID(), jsonyn);
+  var records = readFromTable(dbInst, "base_rent", "ProposalID", propID, jsonyn);
 
   // call the sort function (below) to order by begin date (note should be done in DB)
   records.sort(sortDate);
@@ -123,18 +122,19 @@ function handleBaseRent(dbInst, docInst, propInst) {
     ]
     t.push(row);
   }
-  if (logHandleBaseRent) { console.log(t) }
+  locLog ? console.log(t) : true;
   c0.insertTable(2, t); // insert the table at c0 created above, third paragraph
   var s = c0.getChild(1).getType().toString();
   s = c0.getChild(2).getType().toString();
   // eslint-disable-next-line no-unused-vars
   s = c0.getChild(3).getType().toString();
-  // c0.getChild(2).setColumnWidth(0, 80);
-  // c0.getChild(2).setColumnWidth(1, 80);
-  // c0.getChild(2).setColumnWidth(2, 70);
-
-  // docInstance.saveAndCloseTemplate();
-  return `Base Rent Updated for ${propInst.getpropName()}`
+  }
+  catch (err){
+     Logger.log(`In ${fS}: ${err}`);
+    return false
+  }
+  locLog ? console.log( `Base Rent Updated for id ${propID}`) : true;
+  return true
 }
 
 /**
@@ -397,6 +397,7 @@ function testHandleBR() {
   return ret
 }
 
+const logChkMajorPropDetailCategories = true;
 /**
  * Purpose: Before running an attempt to create a proposal, test to see that all the major
  * categories have been filled in. Should modifiy if additional clauses  sections are added.
@@ -411,7 +412,6 @@ function testHandleBR() {
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {boolean} true/false
  */
-const logChkMajorPropDetailCategories = true;
 function chkMajorPropDetailCategories(propID) {
   try {
     var fS = "chkMajorPropDetailCategories", qryS = "";
@@ -455,6 +455,7 @@ function chkMajorPropDetailCategories(propID) {
  * @return {String} retS - return value
  */
 function logStatusofData(propID) {
+  var fS = "logStatusofData";
   // eslint-disable-next-line no-unused-vars
   var [incSec, excSec, excludedLen] = chkMajorPropDetailCategories(propID);
   if (excludedLen === 0) {
@@ -463,7 +464,7 @@ function logStatusofData(propID) {
   }
   else {
     excSec.forEach((sec) => {
-      Logger.log(`Missing sections: ${sec}`);
+      Logger.log(`In ${fS} missing sections: ${sec}`);
     });
     return false
   }
@@ -478,7 +479,7 @@ function runTests() {
   //var form = FormApp.openById(formID_G);
   //var dupePropS = "Tootco at 6 East 45"
   //var userS = userEmail;
-  var propID = "50fcd535-edb2-11eb-93f1-42010a800005";
+  var propID = getCurrPropID_()[0];
   const test = new UnitTestingApp();
   test.enable(); // tests will run below this line
   test.runInGas(true);

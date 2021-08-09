@@ -246,18 +246,26 @@ SET
     condition];*/
 
 const logSetProposalCurrent = false;
-function setProposalCurrent(dbInst, propInst) {
+/**
+ * Purpose: Takes dbInst and propInst and resets current proposal and then
+ * sets current proposal to the one in instance propInst
+ *
+ * @param  {object} dbInst - instance of databaseC
+ * @param  {object} propInst - instance of proposalC 
+ * @return {String} retS - return value
+ */
+
+function setProposalCurrent(dbInst, propID) {
   var fS = "setProposalCurrent";
   try {
-    var pid = propInst.getpropID();
+    // var pid = propInst.getpropID(); remove when this is tested
     var locConn = dbInst.getconn(); // get connection from the instance
-
     // first set all proposal current -> false
     locConn = dbInst.getconn(); // get connection from the instance
     var qryS1 = `UPDATE proposals SET proposals.current = false;`;
     var stmt = locConn.prepareStatement(qryS1);
     stmt.execute();
-    var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= '${pid}';`;
+    var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= '${propID}';`;
     // console.log(qryS);
     stmt = locConn.prepareStatement(qryS2);
     stmt.execute();
