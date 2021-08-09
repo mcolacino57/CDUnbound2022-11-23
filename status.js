@@ -1,5 +1,6 @@
-const ssStatus = '1uPDFoVLAt6dtQsdbTO_VJ8jhwr3l44Q713gta49vWto';
-Logger = BetterLog.useSpreadsheet(ssStatus);
+/*global databaseC,Logger*/
+/*exported executeStatus*/
+//Logger = BetterLog.useSpreadsheet(ssStatus);
 
 /* 
 Before beginning to create a document, this code should run to give a "report" inside
@@ -8,29 +9,37 @@ that the proposal marked as "current" will be the one of interest
 */
 
 const logGetCurrPropID = true;
+/**
+ * Purpose: Query the proposals table, getting the full record where current=true
+ *
+ * @return {object[]} recA - array-record from proposals
+ */
+
 function getCurrPropID_() {
   var fS = "getCurrPropID";
   var recA = [];
   try {
-    // var pid = propInst.getpropID();
     var dbInst = new databaseC("applesmysql");
+    var recCnt = 0;
     var locConn = dbInst.getconn(); // get connection from the instance
     var qryS = `SELECT proposals.ProposalID,proposals.ProposalName FROM proposals WHERE proposals.current = true ;`;
-    stmt = locConn.prepareStatement(qryS);
+    var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
-    var numCols = results.getMetaData().getColumnCount();
     while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
-      for (var col = 0; col < numCols; col++) {
-        recA.push(results.getString(col + 1));
-      }
+      var propID = results.getString("ProposalID");
+      var propS = results.getString("ProposalName");
+      recCnt++;
+    }
+    if(recCnt==0 || recCnt>1){
+      throw new Error(`In ${fS}, recCnt should be 1 but is ${recCnt}`)
     }
   } catch (err) {
     logGetCurrPropID ? Logger.log(`In ${fS}: ${err}`) : true;
-    return "Problem"
+    return false
   }
   dbInst.closeconn();
-  console.log(recA);
-  return recA
+  logGetCurrPropID ? Logger.log(recA) : true;
+  return [propID,propS]
 }
 
 function extractPropDetail_(propID) {
@@ -40,7 +49,7 @@ function extractPropDetail_(propID) {
     var dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
     var qryS = `SELECT section,ProposalQuestion,ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
-    stmt = locConn.prepareStatement(qryS);
+    var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
     var dataA = [];
@@ -64,6 +73,7 @@ function extractPropDetail_(propID) {
 function executeStatus() {
   var retA = getCurrPropID_();
   var ret = extractPropDetail_(retA[0]);
+  return ret
   // console.log(ret);
 
 }

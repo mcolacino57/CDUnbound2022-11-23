@@ -1,3 +1,13 @@
+/*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
+testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
+testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
+testHandleBR*/
+
+/*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
+ getCurrPropID_,readFromTable,DriveApp,readInListFromTable,
+ UnitTestingApp,maxRows*/
+// 210727 10:39
+
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
 const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
@@ -6,84 +16,95 @@ const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 
+/************** clauseKey strings object ***********************/
+
+clauseKeyObjG = {
+  expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')"
+
+};
 
 
+
+// eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
 function onSubmit() {
-  var retS = evalProposal();
+  var ret = evalProposal();
+  return ret
 }
 
+
+const logEvalProposal = false;
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
  *
- * @return {String} retS - Success
+ * @return {boolean} return - true or false
  */
 function evalProposal() {
   const fS = "evalProposal";
-  const pQS = "Proposal Name?"; // proposal question
-  var propS, retS;
+  const logLoc = logEvalProposal;
+  var ret,propID,propS;
   try {
     var dbInst = new databaseC("applesmysql");
     var docInst = new docC(docID, foldID);
-    // get responses into an array of objects of the form [{"question": qS, "answer": aS},...]
-    var f = FormApp.openById(cdFormID);
-    var respA = crFormResponseArray(f);
-    // get proposal name
-    var propO = respA.find((responseObj) => responseObj.question === pQS);
-    if (!propO) {
-      propS = "No proposal in form";
-      throw new Error('missing proposal');
+    // get proposal name and returns [false,false] if there is a problem--in status.gs
+    // eslint-disable-next-line no-unused-vars
+    [propID, propS] = getCurrPropID_(dbInst, userEmail);
+    var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
+    // var r = setProposalCurrent(dbInst, propID);  Don't think this is needed given that we error check in getCurrPropID
+    if (!ret) {
+      throw new Error(`can't set proposal ${propS} to current`)
     }
-    else { propS = propO.answer; }
-    var propInst = new proposalC(dbInst, propS);
-    retS = setProposalCurrent(dbInst, propInst)
 
-    retS = handleExpenses(dbInst, docInst);
-    console.log("Expenses: " + retS);
-    retS = handleOver(dbInst, docInst);
-    console.log("Over: " + retS);
-    retS = handleTenAndPrem(dbInst, docInst, propS);
-    console.log("Premises: " + retS);
-    retS = handleTI(dbInst, docInst);
-    console.log("TI: " + retS);
-    retS = handleJSON(dbInst, docInst);
-    console.log("JSON: " + retS)
-    retS = handleBaseRent(dbInst, docInst, propInst);
-    console.log("BR: " + retS);
+    ret = handleExpenses(dbInst, docInst);
+    logLoc ? Logger.log("Expenses: " + ret) : true;
+    ret = handleOver(dbInst, docInst);
+    logLoc ? Logger.log("Over: " + ret) : true;
+    ret = handleTenAndPrem(dbInst, docInst, propS);
+    logLoc ? Logger.log("Premises: " + ret) : true;
+    ret = handleTI(dbInst, docInst);
+    logLoc ? Logger.log("TI: " + ret) : true;
+    ret = handleJSON(dbInst, docInst);
+    logLoc ? Logger.log("JSON: " + ret) : true;
+    ret = handleBaseRent(dbInst, docInst, propInst);
+    logLoc ? Logger.log("BR: " + ret) : true;
 
-  } catch (e) {
-    Logger.log(`In ${fS}: ${e}`);
-    return "Problem"
+  } catch (err) {
+    Logger.log(`In ${fS}: ${err}`);
+    return false
   }
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
-  return "Success"
+  return true
 }
 
 
 /*********** handleBaseRent********/
+var logHandleBaseRent = false;
+
 /**
  * Purpose: Handle base rent
  *
+ * @param {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - document instance
- * @param  {Number} spaceID - integer index into the tourbook table
- * @return {String} updateS - return value
+ * @param  {String} propID - proposal ID
+ * @@return {boolean} return - true or false
  */
 
-var logHandleBaseRent = false;
-function handleBaseRent(dbInst, docInst, propInst) {
-  var offsetObj = {}, tempS = "", offset = 0;
+function handleBaseRent(dbInst, docInst, propID) {
+  var fS="handleBaseRent";
+  var locLog = logHandleBaseRent;
+  try {
+  var offsetObj = {}, offset = 0;
   // get the local doc body from the doc instance
   var doc = docInst.locBody;
   // Find the replacement text
   var rgel = doc.findText("<<BaseRentalRate>>");
   var el = rgel.getElement().getParent(); // take the found element and get its parent
-  var elType = el.getType();
   var loopCtl = el.toString()  // use the type of the parent (as string) to start the loop
   while (loopCtl != "BODY_SECTION") { // stop when you get to the body section
-    par = el.getParent();
-    parType = par.getType(); // put parent type into var
+    var par = el.getParent();
+    var parType = par.getType(); // put parent type into var
     el = par; // make the parent into the current element, el 
     offset = el.getParent().getChildIndex(el); // go up and down to count siblings
     loopCtl = parType.toString();
@@ -99,7 +120,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
   // go to the DB and get the proposed rental rates associated with this spaceID
   // var retBR = getBySpaceID(spaceID, "proposedrent");
   var jsonyn = false;
-  var records = readFromTable(dbInst, "base_rent", "ProposalID", propInst.getpropID(), jsonyn);
+  var records = readFromTable(dbInst, "base_rent", "ProposalID", propID, jsonyn);
 
   // call the sort function (below) to order by begin date (note should be done in DB)
   records.sort(sortDate);
@@ -107,24 +128,26 @@ function handleBaseRent(dbInst, docInst, propInst) {
   var t = [["Begin Date", "End Date", "Rent PSF"]];
   // for all the base records, push the created row onto the table
   for (var j = 0; j < records.length; j++) {
-    row = [
+    var row = [
       Utilities.formatDate(new Date(records[j].begindate), "GMT+1", "MMMM d, yyyy"),
       Utilities.formatDate(new Date(records[j].enddate), "GMT+1", "MMMM d, yyyy"),
       curr_formatter.format(records[j].rentpsf)
     ]
     t.push(row);
   }
-  if (logHandleBaseRent) { console.log(t) };
+  locLog ? console.log(t) : true;
   c0.insertTable(2, t); // insert the table at c0 created above, third paragraph
   var s = c0.getChild(1).getType().toString();
-  var s = c0.getChild(2).getType().toString();
-  var s = c0.getChild(3).getType().toString();
-  // c0.getChild(2).setColumnWidth(0, 80);
-  // c0.getChild(2).setColumnWidth(1, 80);
-  // c0.getChild(2).setColumnWidth(2, 70);
-
-  // docInstance.saveAndCloseTemplate();
-  return `Base Rent Updated for ${propInst.getpropName()}`
+  s = c0.getChild(2).getType().toString();
+  // eslint-disable-next-line no-unused-vars
+  s = c0.getChild(3).getType().toString();
+  }
+  catch (err){
+     Logger.log(`In ${fS}: ${err}`);
+    return false
+  }
+  locLog ? console.log( `Base Rent Updated for id ${propID}`) : true;
+  return true
 }
 
 /**
@@ -133,12 +156,14 @@ function handleBaseRent(dbInst, docInst, propInst) {
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleJSON(dbInst, docInst) {
-  var fS = "handleJSON", probS, retS;
+  var fS = "handleJSON", probS;
+  var userPrefixS = userEmail.split('@')[0];
+  var fileName = userPrefixS + ".json";
   try {
-    var fileName = "mcolacino.json";
+    // var fileName = "mcolacino.json";
     var files = DriveApp.getFilesByName(fileName);
     if (files.hasNext()) {
       var file = files.next();
@@ -146,20 +171,20 @@ function handleJSON(dbInst, docInst) {
       var json = JSON.parse(content);
     }
     if (json.name) {
-      retS = updateTemplateBody("<<BrokerName>>", json.name, docInst)
+      updateTemplateBody("<<BrokerName>>", json.name, docInst)
     }
     if (json.email) {
-      retS = updateTemplateBody("<<BrokerEmail>>", json.email, docInst);
+      updateTemplateBody("<<BrokerEmail>>", json.email, docInst);
     }
     if (json.license_num) {
-      retS = updateTemplateBody("<<BrokerageLicense>>", json.license_num, docInst);
+      updateTemplateBody("<<BrokerageLicense>>", json.license_num, docInst);
     }
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 }
 
 /**
@@ -168,10 +193,10 @@ function handleJSON(dbInst, docInst) {
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleTI(dbInst, docInst) {
-  var fS = "handleTI", probS, retS, repClauseS;
+  var fS = "handleTI", probS, repClauseS;
   var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
@@ -179,7 +204,7 @@ function handleTI(dbInst, docInst) {
     pdA.forEach((pd) => {
       if (pd.proposalclausekey === "tiAllow") {
         var tiDollars = curr_formatter.format(pd.proposalanswer);
-        retS = updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
+        updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
       } else {
         repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         tiTerms = tiTerms + repClauseS + "\n\n"
@@ -187,14 +212,14 @@ function handleTI(dbInst, docInst) {
     });
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
     if (tiTerms != "") { tiTerms = tiTerms.replace(/\n\n$/, ''); }
-    retS = updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
+    updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 }
 
 
@@ -203,40 +228,32 @@ function handleTI(dbInst, docInst) {
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleTenAndPrem(dbInst, docInst, propIDS) {
-  var fS = "handleTenAndPrem", retS, probS;
+  var fS = "handleTenAndPrem", probS;
   try {
     var jsonyn = false;
     var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, jsonyn);
     var spid = retA[0].spaceidentity;
     var tenantNameS = retA[0].tenantname;
-    retA = readFromTable(dbInst, "sub_spaces", "space_identity", spid, jsonyn);
+    retA = readFromTable(dbInst, "survey_spaces", "identity", spid, jsonyn);
     var spA = retA[0]
     retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
     var premClauseBody = retA[0].clausebody;
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
-    if (spA.floor) {
-      premClauseBody = premClauseBody.replace("<<Floor>>", spA.floor);
-    } else {
-      premClauseBody = premClauseBody.replace("located on floor <<Floor>> of the Building", "");
-    }
-    if (spA.suite) {
-      premClauseBody = premClauseBody.replace("<<SuiteNumber>>", spA.suite);
-    } else {
-      premClauseBody = premClauseBody.replace("known as suite <<SuiteNumber>>", "");
-    }
-    retS = updateTemplateBody("<<Premises>>", premClauseBody, docInst)
-    retS = updateTemplateBody("<<Address>>", spA.address, docInst);
-    retS = updateTemplateBody("<<ClientCompany>>", tenantNameS, docInst);
+    premClauseBody = premClauseBody.replace("<<FloorAndSuite>>", spA.floorandsuite);
+    updateTemplateBody("<<Premises>>", premClauseBody, docInst)
+    updateTemplateBody("<<Address>>", spA.address, docInst);
+    updateTemplateBody("<<ClientCompany>>", tenantNameS, docInst);
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
+    return false
   }
-  return "Success"
+  return true
 }
 
 
@@ -247,19 +264,21 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
  * @param  {Object} docInst - instance of documenC
 
  * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleExpenses(dbInst, docInst) {
   var fS = "handleExpenses";
-  var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, retS, probS,elRepS;
+  // all clauseKeys in expenses UPDATE if Operating Expenses form update
+  var expInS =clauseKeyObjG.expenses
+  // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
+  var repClauseS, ret, probS, elRepS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
       if (pd.section === "OperatingExpenses") {
         repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        retS = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-        if (retS != "Success") {
+        ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+        if (!ret) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
@@ -269,15 +288,15 @@ function handleExpenses(dbInst, docInst) {
         } else {
           elRepS = pd.clausebody;
         }
-        retS = updateTemplateBody("<<Electric>>", elRepS, docInst);
-        if (retS != "Success") {
+        ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
+        if (!ret) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
       if (pd.section === "RealEstateTaxes") {
-        retRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        retS = updateTemplateBody("<<RealEstateTaxes>>", elRepS, docInst);
-        if (retS != "Success") {
+        pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
+        ret = updateTemplateBody("<<RealEstateTaxes>>", elRepS, docInst);
+        if (!ret ) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
@@ -286,9 +305,9 @@ function handleExpenses(dbInst, docInst) {
   catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 }
 
 /**
@@ -297,20 +316,20 @@ function handleExpenses(dbInst, docInst) {
  *
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 
 function handleOver(dbInst, docInst) {
   var fS = "handleOver";
-  var probS, repClauseS, repS, retS;
+  var probS, repClauseS, repS, ret;
   // first handle clauses, then direct replacements
   try {
     var overInsCl = "('secDeposit')";
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
     pdA.forEach((pd) => {
       repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-      retS = updateTemplateBody(pd.replstruct, repClauseS, docInst);
-      if (retS != "Success") {
+      ret = updateTemplateBody(pd.replstruct, repClauseS, docInst);
+      if (!ret) {
         throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
       }
     });
@@ -325,20 +344,23 @@ function handleOver(dbInst, docInst) {
       } else {
         repS = pd.proposalanswer;
       }
-      retS = updateTemplateBody(pd.replstruct, repS, docInst);
-      if (retS != "Success") {
-        throw new Error(`In ${fS}: problem with updateTemplateBody: ${retS}`)
+      ret = updateTemplateBody(pd.replstruct, repS, docInst);
+      if (!ret) {
+        throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
       }
     });
 
-    retS = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+    ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+    if (!ret) {
+        throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+      }
   }
   catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 
 }
 
@@ -350,16 +372,17 @@ function testHandleOver() {
   var ret = handleOver(dbInst, docInst);
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
+  return ret
 }
 
-function tHandleOE() {
+function testHandleExpenses() {
   var dbInst = new databaseC("applesmysql");
   var docInst = new docC(docID, foldID);
-  var ds = docInst.ds;
   var ret = handleExpenses(dbInst, docInst);
   // Logger.log(ret)
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
+  return ret
 }
 
 /**
@@ -367,7 +390,7 @@ function tHandleOE() {
  *
  * @param  {String} replStructure - string in the form <<replace_me>>
  * @param  {String} replText - text to be replaced
- * @return {String}  retS - string including replacement structure
+ * @return {boolean}  return - true or undefined
  */
 
 function updateTemplateBody(replStructure, replText, docInst) {
@@ -375,24 +398,117 @@ function updateTemplateBody(replStructure, replText, docInst) {
   //Then we call replaceText method
   try {
     docInst.locBody.replaceText(replStructure, replText);
-    var debugS = docInst.locBody.getText();
-    // console.log(debugS)
-  } catch (err) {
-    probS = `In ${fS}: unable to update ${replStructure}`;
-    Logger.log(probS);
-    return probS
+      } catch (err) {
+    var probS = `In ${fS}: unable to update ${replStructure}`;
+    throw new Error(probS)
   }
-  return "Success"
+  return true
 }
 
 function testHandleBR() {
   var dbInst = new databaseC("applesmysql");
   var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
   var docInst = new docC(docID, foldID);
-  var retS = handleBaseRent(dbInst, docInst, propInst);
+  var ret = handleBaseRent(dbInst, docInst, propInst);
+  return ret
+}
+
+const logChkMajorPropDetailCategories = false;
+/**
+ * Purpose: Before running an attempt to create a proposal, test to see that all the major
+ * categories have been filled in. Should modifiy if additional clauses  sections are added.
+ * Also should check to see where the proposal is located and omit certain checks, for example 
+ * parking in NY. Also note that Premises is omitted even though its a legitimate section
+ * since it's set entirely through the survey_spaces table.
+ * 
+ * Also note that this uses the view prop_detail_ex which joins the clause table
+ * with the prop_detail table. This is where the 
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {boolean} return - object or false
+ */
+function chkMajorPropDetailCategories(propID) {
+  try {
+    var fS = "chkMajorPropDetailCategories", qryS = "";
+    var incSec = [], excSec = [];
+    var results;
+
+    const dbInst = new databaseC("applesmysql");
+    var locConn = dbInst.getconn(); // get connection from the instance
+    var stmt = locConn.createStatement();
+    stmt.setMaxRows(maxRows);
+    // If additional sections get added, add to this list
+    var sectionSA = [
+      "Date",
+      "Electric",
+      "Overview",
+      "OperatingExpenses",
+      "RealEstateTaxes",
+      "Security",
+      "TenantImprovements",
+      "Use"
+    ];
+    sectionSA.forEach((s) => {
+      qryS = `SELECT * FROM prop_detail_ex where ProposalID = '${propID}' AND section = '${s}';`;
+      results = stmt.executeQuery(qryS);
+      results.next() ? incSec.push(s) : excSec.push(s);
+    });
+    // excSec.length==0 ? excSec =["none"] : true;
+    logChkMajorPropDetailCategories ? Logger.log(`in: ${incSec} missing: ${excSec}`) : true;
+    return [incSec, excSec, excSec.length]
+  }
+  catch (err) {
+    Logger.log(`In ${fS}: ${err}`);
+    return false
+  }
+}
+
+const logLogStatusofData = false;
+/**
+ * Purpose
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {boolean} return - true or false
+ */
+function logStatusofData(propID) {
+  var fS = "logStatusofData";
+  // eslint-disable-next-line no-unused-vars
+  var [incSec, excSec, excludedLen] = chkMajorPropDetailCategories(propID);
+  if (excludedLen === 0) {
+    logLogStatusofData ? Logger.log(`In CD Bound / logStatusofData all major sections included`) : true;
+    return true
+  }
+  else {
+    excSec.forEach((sec) => {
+      Logger.log(`In ${fS} missing sections: ${sec}`);
+    });
+    return false
+  }
 
 }
 
+
+
+
+function runTests() {
+  // dbInst = new databaseC("applesmysql");
+  //var form = FormApp.openById(formID_G);
+  //var dupePropS = "Tootco at 6 East 45"
+  //var userS = userEmail;
+  var propID = getCurrPropID_()[0];
+  const test = new UnitTestingApp();
+  test.enable(); // tests will run below this line
+  test.runInGas(true);
+  if (test.isEnabled) {
+    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
+    test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
+    test.assert(evalProposal(),`evalProposal -> propID ${propID}`)
+
+
+  }
+}
 
 /************************Utilities *********************** */
 const curr_formatter = new Intl.NumberFormat('en-US', {
@@ -401,11 +517,11 @@ const curr_formatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2
 })
 
-const percent_formatter = new Intl.NumberFormat('en-US', {
-  style: 'percent',
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2
-})
+// const percent_formatter = new Intl.NumberFormat('en-US', {
+//   style: 'percent',
+//   minimumFractionDigits: 2,
+//   maximumFractionDigits: 2
+// })
 
 function sortDate(r1, r2) {
   if (r1.BeginDate < r2.BeginDate)

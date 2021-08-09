@@ -1,42 +1,37 @@
-const proposalS = "Proposal to be used:"
+/*exported getItemResps,testCrFormResponseArray,testDisplayTitlesAndIDs,testExamineForm ,
+runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,writeAllQuestionsKeys,emptyCk_Question,
+setOverviewDesc */
+/*global Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
+cdFormID,poDropdownID,cdDropdownID,getSpaceDisplay
+*/
+// 210727 9:55
 
-const oeFormID = '1eQEOsPOHrrQuHMRKrTghjDggS7wrTWDr4L-YIQntBsk'; // Operating Expenses
-const tiFormID = '1sfdyrkMJ1b8oXjetqSjvsZSdcogEfDDKR3J0h8KWh9M'; // Tenant Improvements
-const poFormID = '1LcRF_WPTZ3bNudX6h_rdTzRARMRl7Rajf4gUR6JKPzA'; // Proposal Overview
-const psFormID = '1ZVxqRKokgqTTfloI_zFBi59Sv7Q2NLDOB6fmoAcLAcE'; // Proposal Start
-const cdFormID = '1JpMiIXViWzTAlXH2xUixtcf2_fPILysw_DAstC0HSn4';  // Create Document Form
+/* CHANGE FOR EACH FORM */
+const formID_G = cdFormID;
+const formName_G = 'Create Document';
+const fieldS_G = ""; // Note that this code doesn't delete from ck_question and therefore no need for this
 
-const tiDropdownID = '1210099673';
-const oeDropdownID = '332505004';
-const poDropdownID = '357079143';
-const poBrokerDropdownID = '1181615854'; 
-const psDropdownID = '1120136627'; // used in fillSpacesDropdown below
-const cdDropdownID = '1941214219';
-
-
-/***************Utility and testing *************/
-/**
- * Purpose
- *
- * @param  {string} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {string} retS - return value
+/*Code_Section*/
+/***************Utility ***********************/
+/*
+* function returnItemNumber_(items, questionS)
+* function examineForm()
+* function getSectionHeaders(form)
+* function getItemResps(form)
+* function responseByItemID(form, itemtosearch)
  */
 
-function extractItemID(f) {
-  var items = f.getItems();
-  for (var i in items) {
-    console.log(items[i].getTitle() + ': ' + items[i].getId());
+// logs all of the titles of items in a form 
+function examineForm(f) {
+  var fitems = f.getItems();
+  for (var j = 0; j < fitems.length; j++) {
+    var title = fitems[j].getTitle()
+    var id = fitems[j].getId();
+    var itemTypeIs = fitems[j].getType();
+    var typeS = itemTypeIs.toString();
+    console.log(`Item title for: #${j} - ${title} ID: ${id} - type ${typeS}`);
   }
 }
-
-function testExtractItemID() {
-  var f = FormApp.openById(cdFormID);
-  var ret = extractItemID(f);
-}
-
-
-
 
 /**
  * Purpose: get a list of items from the form; assumes just one response. Change if there are multiple responsess
@@ -60,8 +55,51 @@ function getItemResps(form) {
   return retA
 }
 
+/*End Code_Section*/
 
-/*************************DROPDOWN INITIALIZATION******* */
+/*Code_Section*/
+/**********************Tests ************************************************ */
+/**
+ * function testFillSpacesDropdown() 
+ * function testDisplayTitlesAndIDs()
+ * function testCrFormResponseArray()
+ * function testExamineForm()
+ */
+
+ function testFillSpacesDropdown() {
+   var ret = fillSpacesDropdown_(formID_G, poDropdownID);
+   return ret
+}
+
+function testDisplayTitlesAndIDs() {
+  var retS = displayTitlesAndIDS_(formID_G);
+  console.log(retS)
+}
+function testCrFormResponseArray() {
+  var f = FormApp.openById(formID_G);
+  var ret = crFormResponseArray(f); console.log(ret)
+}
+
+function testExamineForm() {
+  var f = FormApp.openById(formID_G);
+  var ret = examineForm(f);
+  return ret
+}
+
+
+
+/*End Code_Section*/
+
+/* Code_Section */
+
+/*************************FILL DROPDOWNS ********************* */
+/**
+ * function fillProposalDropdown_(dbInst,formID, dropDownID)
+ * function runFillProposalDropDown()
+ * function displayTitlesAndIDS_(formID)
+ * function testPrintTitlesAndIDs() 
+ * function crFormResponseArray(form)
+ */
 
 /**
  * Purpose: take an array of strings and populate a dropdown in formID
@@ -82,10 +120,8 @@ function fillProposalDropdown_(dbInst, formID, dropDownID) {
 
     // get the dropdown from the form
     var dd = FormApp.openById(formID).getItemById(dropDownID);
-    var itemT = dd.getType();
     if (dd.getType() != FormApp.ItemType.LIST) {
       throw new Error(`Item: ${dropDownID} is not a list!`);
-      return false
     }
     else {
       dd.asListItem().setChoiceValues(ddvaluesA);
@@ -118,16 +154,14 @@ function fillSpacesDropdown_(formID, dropDownID) {
   var retS;
   try {
     // get proposal array from db
-    var asfsfA = getSpaceDisplay("mcolacino@squarefoot.com");  // gcloudSQL modified to this 210708
+    var asfsfA = getSpaceDisplay(userEmail);  // gcloudSQL modified to this 210708
     var ddvaluesA = asfsfA.map(pr => {
       return pr.sdesc;
     })
     // get the dropdown from the form
     var dd = FormApp.openById(formID).getItemById(dropDownID);
-    var itemT = dd.getType();
     if (dd.getType() != FormApp.ItemType.LIST) {
       throw new Error(`Item: ${dropDownID} is not a list!`);
-      return false
     }
     else {
       dd.asListItem().setChoiceValues(ddvaluesA);
@@ -141,9 +175,11 @@ function fillSpacesDropdown_(formID, dropDownID) {
   return retS
 }
 
+/*
 function runFillSpacesDropdown() {
   var retS = fillSpacesDropdown_(psFormID, psDropdownID);
 }
+*/
 
 function displayTitlesAndIDS_(formID) {
   var form = FormApp.openById(formID);
@@ -153,15 +189,8 @@ function displayTitlesAndIDS_(formID) {
   }
 }
 
-function testDisplayTitlesAndIDs() {
-  var retS = displayTitlesAndIDS_(cdFormID);
- 
-}
-
-
-function crFormResponseArray() {
+function crFormResponseArray(form) {
   // Use the global form ID and log the responses to each question.
-  var form = FormApp.openById(cdFormID);
   var respA = [];
   var formResponses = form.getResponses();
   // console.log("Number of responses is %s ", formResponses.length)
@@ -175,15 +204,9 @@ function crFormResponseArray() {
   }
   return respA
 }
-function testCrFormResponseArray() { var ret = crFormResponseArray(psFormID); console.log(ret) }
-
 
 
 /************************ FORM PREP ******************************************************* */
-/* CHANGE FOR EACH FORM */
-const formID_G = cdFormID;
-const formName_G = 'Create Document';
-
 /**
  * Purpose: Run this function to populate the ck_question table; this should be run
  * whenever a new question is added to the form; START HERE, and use emptyCk_Question if needed
@@ -216,9 +239,9 @@ function writeAllQuestionsKeys() {
     }
   } catch (err) {
     console.log(`In ${fS}: ${err}`);
-    return "Problem"
+    return false
   }
-  return "Success"
+  return true
 }
 
 /**
@@ -231,7 +254,7 @@ function writeAllQuestionsKeys() {
 key: <clausekey> / replacement: <replacement> */
 // small change to test commit
 function crFormKeyArray(formID) {
-  form = FormApp.openById(formID);
+  var form = FormApp.openById(formID);
   var fS = "crFormKeyArray";
   try {
     var items = form.getItems();
@@ -260,7 +283,7 @@ function writeCk_Question(dbInst,qcrRec){
   var colS = "Question,ClauseKey,ReplStruct,FormName,CreatedBy,CreatedWhen,ModifiedWhen,LastModifiedBy";
   var valA = Object.values(qcrRec);
   var recordS = "";
-  for (i = 0; i < valA.length; i++) {
+  for (var i = 0; i < valA.length; i++) {
     if (i < (valA.length - 1)) {
       recordS = recordS + "'" + valA[i] + "',";
     } else {
@@ -292,17 +315,17 @@ function emptyCk_Question(){
   var fS = "emptyCk_Question";
   var dbInst = new databaseC("applesmysql");
   try {
-  var qryS = `Delete from ck_question where ClauseKey in ('tenName');`;
+  var qryS = `Delete from ck_question where ClauseKey in (${fieldS_G});`;
   console.log(qryS);
   var locConn = dbInst.getconn(); // get connection from the instance
   var stmt = locConn.prepareStatement(qryS);
   stmt.execute();
 } catch (e) {
   logEmptyCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
-  return "Problem"
+  return false
 }
 dbInst.closeconn();
-return "Success"
+return true
 }
 
 
