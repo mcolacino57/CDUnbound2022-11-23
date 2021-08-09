@@ -25,7 +25,6 @@ function getCurrPropID_() {
     var qryS = `SELECT proposals.ProposalID,proposals.ProposalName FROM proposals WHERE proposals.current = true ;`;
     var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
-    var numCols = results.getMetaData().getColumnCount();
     while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
       var propID = results.getString("ProposalID");
       var propS = results.getString("ProposalName");

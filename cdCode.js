@@ -1,10 +1,10 @@
 /*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
 testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
-testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,tHandleOE,
+testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
 testHandleBR*/
 
 /*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
- getCurrPropID_,setProposalCurrent,readFromTable,DriveApp,readInListFromTable,
+ getCurrPropID_,readFromTable,DriveApp,readInListFromTable,
  UnitTestingApp,maxRows*/
 // 210727 10:39
 
@@ -16,6 +16,15 @@ const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 
+/************** clauseKey strings object ***********************/
+
+clauseKeyObjG = {
+  expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')"
+
+};
+
+
+
 // eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
@@ -24,14 +33,17 @@ function onSubmit() {
   return ret
 }
 
+
+const logEvalProposal = false;
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
  *
- * @return {String} retS - Success
+ * @return {boolean} return - true or false
  */
 function evalProposal() {
   const fS = "evalProposal";
-  var retS,propID,propS;
+  const logLoc = logEvalProposal;
+  var ret,propID,propS;
   try {
     var dbInst = new databaseC("applesmysql");
     var docInst = new docC(docID, foldID);
@@ -39,31 +51,31 @@ function evalProposal() {
     // eslint-disable-next-line no-unused-vars
     [propID, propS] = getCurrPropID_(dbInst, userEmail);
     var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
-    var r = setProposalCurrent(dbInst, propID);  // in gcloudSQL
-    if (!r) {
+    // var r = setProposalCurrent(dbInst, propID);  Don't think this is needed given that we error check in getCurrPropID
+    if (!ret) {
       throw new Error(`can't set proposal ${propS} to current`)
     }
 
-    retS = handleExpenses(dbInst, docInst);
-    console.log("Expenses: " + retS);
-    retS = handleOver(dbInst, docInst);
-    console.log("Over: " + retS);
-    retS = handleTenAndPrem(dbInst, docInst, propS);
-    console.log("Premises: " + retS);
-    retS = handleTI(dbInst, docInst);
-    console.log("TI: " + retS);
-    retS = handleJSON(dbInst, docInst);
-    console.log("JSON: " + retS)
-    retS = handleBaseRent(dbInst, docInst, propInst);
-    console.log("BR: " + retS);
+    ret = handleExpenses(dbInst, docInst);
+    logLoc ? Logger.log("Expenses: " + ret) : true;
+    ret = handleOver(dbInst, docInst);
+    logLoc ? Logger.log("Over: " + ret) : true;
+    ret = handleTenAndPrem(dbInst, docInst, propS);
+    logLoc ? Logger.log("Premises: " + ret) : true;
+    ret = handleTI(dbInst, docInst);
+    logLoc ? Logger.log("TI: " + ret) : true;
+    ret = handleJSON(dbInst, docInst);
+    logLoc ? Logger.log("JSON: " + ret) : true;
+    ret = handleBaseRent(dbInst, docInst, propInst);
+    logLoc ? Logger.log("BR: " + ret) : true;
 
   } catch (err) {
     Logger.log(`In ${fS}: ${err}`);
-    return "Problem"
+    return false
   }
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
-  return "Success"
+  return true
 }
 
 
@@ -76,10 +88,11 @@ var logHandleBaseRent = false;
  * @param {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - document instance
  * @param  {String} propID - proposal ID
- * @return {String} updateS - return value
+ * @@return {boolean} return - true or false
  */
 
 function handleBaseRent(dbInst, docInst, propID) {
+  var fS="handleBaseRent";
   var locLog = logHandleBaseRent;
   try {
   var offsetObj = {}, offset = 0;
@@ -143,7 +156,7 @@ function handleBaseRent(dbInst, docInst, propID) {
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleJSON(dbInst, docInst) {
   var fS = "handleJSON", probS;
@@ -169,9 +182,9 @@ function handleJSON(dbInst, docInst) {
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 }
 
 /**
@@ -180,7 +193,7 @@ function handleJSON(dbInst, docInst) {
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleTI(dbInst, docInst) {
   var fS = "handleTI", probS, repClauseS;
@@ -204,9 +217,9 @@ function handleTI(dbInst, docInst) {
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 }
 
 
@@ -215,7 +228,7 @@ function handleTI(dbInst, docInst) {
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleTenAndPrem(dbInst, docInst, propIDS) {
   var fS = "handleTenAndPrem", probS;
@@ -238,8 +251,9 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
+    return false
   }
-  return "Success"
+  return true
 }
 
 
@@ -250,19 +264,21 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
  * @param  {Object} docInst - instance of documenC
 
  * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function handleExpenses(dbInst, docInst) {
   var fS = "handleExpenses";
-  var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, retS, probS, elRepS;
+  // all clauseKeys in expenses UPDATE if Operating Expenses form update
+  var expInS =clauseKeyObjG.expenses
+  // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
+  var repClauseS, ret, probS, elRepS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
       if (pd.section === "OperatingExpenses") {
         repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        retS = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-        if (retS != "Success") {
+        ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+        if (!ret) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
@@ -272,15 +288,15 @@ function handleExpenses(dbInst, docInst) {
         } else {
           elRepS = pd.clausebody;
         }
-        retS = updateTemplateBody("<<Electric>>", elRepS, docInst);
-        if (retS != "Success") {
+        ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
+        if (!ret) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
       if (pd.section === "RealEstateTaxes") {
         pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        retS = updateTemplateBody("<<RealEstateTaxes>>", elRepS, docInst);
-        if (retS != "Success") {
+        ret = updateTemplateBody("<<RealEstateTaxes>>", elRepS, docInst);
+        if (!ret ) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
@@ -289,9 +305,9 @@ function handleExpenses(dbInst, docInst) {
   catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 }
 
 /**
@@ -300,20 +316,20 @@ function handleExpenses(dbInst, docInst) {
  *
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 
 function handleOver(dbInst, docInst) {
   var fS = "handleOver";
-  var probS, repClauseS, repS, retS;
+  var probS, repClauseS, repS, ret;
   // first handle clauses, then direct replacements
   try {
     var overInsCl = "('secDeposit')";
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
     pdA.forEach((pd) => {
       repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-      retS = updateTemplateBody(pd.replstruct, repClauseS, docInst);
-      if (retS != "Success") {
+      ret = updateTemplateBody(pd.replstruct, repClauseS, docInst);
+      if (!ret) {
         throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
       }
     });
@@ -328,20 +344,23 @@ function handleOver(dbInst, docInst) {
       } else {
         repS = pd.proposalanswer;
       }
-      retS = updateTemplateBody(pd.replstruct, repS, docInst);
-      if (retS != "Success") {
-        throw new Error(`In ${fS}: problem with updateTemplateBody: ${retS}`)
+      ret = updateTemplateBody(pd.replstruct, repS, docInst);
+      if (!ret) {
+        throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
       }
     });
 
-    retS = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+    ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+    if (!ret) {
+        throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+      }
   }
   catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
-    return probS
+    return false
   }
-  return "Success"
+  return true
 
 }
 
@@ -356,7 +375,7 @@ function testHandleOver() {
   return ret
 }
 
-function tHandleOE() {
+function testHandleExpenses() {
   var dbInst = new databaseC("applesmysql");
   var docInst = new docC(docID, foldID);
   var ret = handleExpenses(dbInst, docInst);
@@ -371,7 +390,7 @@ function tHandleOE() {
  *
  * @param  {String} replStructure - string in the form <<replace_me>>
  * @param  {String} replText - text to be replaced
- * @return {String}  retS - string including replacement structure
+ * @return {boolean}  return - true or undefined
  */
 
 function updateTemplateBody(replStructure, replText, docInst) {
@@ -379,14 +398,11 @@ function updateTemplateBody(replStructure, replText, docInst) {
   //Then we call replaceText method
   try {
     docInst.locBody.replaceText(replStructure, replText);
-    
-    //console.log(docInst.locBody.getText());
-  } catch (err) {
+      } catch (err) {
     var probS = `In ${fS}: unable to update ${replStructure}`;
-    Logger.log(probS);
-    return probS
+    throw new Error(probS)
   }
-  return "Success"
+  return true
 }
 
 function testHandleBR() {
@@ -397,7 +413,7 @@ function testHandleBR() {
   return ret
 }
 
-const logChkMajorPropDetailCategories = true;
+const logChkMajorPropDetailCategories = false;
 /**
  * Purpose: Before running an attempt to create a proposal, test to see that all the major
  * categories have been filled in. Should modifiy if additional clauses  sections are added.
@@ -410,7 +426,7 @@ const logChkMajorPropDetailCategories = true;
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 
- * @return {boolean} true/false
+ * @return {boolean} return - object or false
  */
 function chkMajorPropDetailCategories(propID) {
   try {
@@ -438,28 +454,30 @@ function chkMajorPropDetailCategories(propID) {
       results = stmt.executeQuery(qryS);
       results.next() ? incSec.push(s) : excSec.push(s);
     });
-    logChkMajorPropDetailCategories ? console.log(`in: ${incSec} out: ${excSec}`) : true;
+    // excSec.length==0 ? excSec =["none"] : true;
+    logChkMajorPropDetailCategories ? Logger.log(`in: ${incSec} missing: ${excSec}`) : true;
     return [incSec, excSec, excSec.length]
   }
   catch (err) {
-    console.log(`In ${fS}: ${err}`);
+    Logger.log(`In ${fS}: ${err}`);
     return false
   }
 }
 
+const logLogStatusofData = false;
 /**
  * Purpose
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
+ * @return {boolean} return - true or false
  */
 function logStatusofData(propID) {
   var fS = "logStatusofData";
   // eslint-disable-next-line no-unused-vars
   var [incSec, excSec, excludedLen] = chkMajorPropDetailCategories(propID);
   if (excludedLen === 0) {
-    Logger.log(`In CD Bound / logStatusofData all major sections included`);
+    logLogStatusofData ? Logger.log(`In CD Bound / logStatusofData all major sections included`) : true;
     return true
   }
   else {
@@ -475,7 +493,7 @@ function logStatusofData(propID) {
 
 
 function runTests() {
-  //var dbInst = new databaseC("applesmysql");
+  // dbInst = new databaseC("applesmysql");
   //var form = FormApp.openById(formID_G);
   //var dupePropS = "Tootco at 6 East 45"
   //var userS = userEmail;
@@ -484,8 +502,9 @@ function runTests() {
   test.enable(); // tests will run below this line
   test.runInGas(true);
   if (test.isEnabled) {
-    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> ${propID}`);
-    test.assert(logStatusofData(propID), `logStatusofData, propID ${propID}`);
+    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
+    test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
+    test.assert(evalProposal(),`evalProposal -> propID ${propID}`)
 
 
   }
