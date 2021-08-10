@@ -17,10 +17,12 @@ const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Te
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 
 /************** clauseKey strings object ***********************/
-
-clauseKeyObjG = {
-  expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')"
-
+/* Modify these when form is modified especially when new questions/clauses/clauseKeys are added */
+const clauseKeyObjG = {
+  expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
+  security: "('secDeposit')",
+  overview: "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
+  ti: "('tiAllow','tiFreight','tiAccess','tiCompBid')"
 };
 
 
@@ -52,9 +54,9 @@ function evalProposal() {
     [propID, propS] = getCurrPropID_(dbInst, userEmail);
     var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
     // var r = setProposalCurrent(dbInst, propID);  Don't think this is needed given that we error check in getCurrPropID
-    if (!ret) {
-      throw new Error(`can't set proposal ${propS} to current`)
-    }
+    // if (!ret) {
+    //   throw new Error(`can't set proposal ${propS} to current`)
+    // }
 
     ret = handleExpenses(dbInst, docInst);
     logLoc ? Logger.log("Expenses: " + ret) : true;
@@ -197,7 +199,8 @@ function handleJSON(dbInst, docInst) {
  */
 function handleTI(dbInst, docInst) {
   var fS = "handleTI", probS, repClauseS;
-  var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
+  var tiInS = clauseKeyObjG.ti;
+  //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
     var tiTerms = "";
@@ -324,7 +327,8 @@ function handleOver(dbInst, docInst) {
   var probS, repClauseS, repS, ret;
   // first handle clauses, then direct replacements
   try {
-    var overInsCl = "('secDeposit')";
+    // var overInsCl = "('secDeposit')";
+    var overInsCl = clauseKeyObjG.security;
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
     pdA.forEach((pd) => {
       repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
@@ -334,7 +338,9 @@ function handleOver(dbInst, docInst) {
       }
     });
     // direct replacements: 
-    var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
+
+    //var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
+    var overInsS = clauseKeyObjG.overview;
     pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
     pdA.forEach((pd) => {
       if (pd.proposalclausekey === "commDate") {
