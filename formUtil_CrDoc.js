@@ -2,7 +2,7 @@
 runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,writeAllQuestionsKeys,emptyCk_Question,
 setOverviewDesc */
 /*global Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
-cdFormID,poDropdownID,cdDropdownID,getSpaceDisplay
+cdFormID,cdDropdownID
 */
 // 210727 9:55
 
@@ -66,10 +66,6 @@ function getItemResps(form) {
  * function testExamineForm()
  */
 
- function testFillSpacesDropdown() {
-   var ret = fillSpacesDropdown_(formID_G, poDropdownID);
-   return ret
-}
 
 function testDisplayTitlesAndIDs() {
   var retS = displayTitlesAndIDS_(formID_G);
@@ -139,40 +135,6 @@ function runFillProposalDropDown() {
   var dbInst = new databaseC("applesmysql");
   var retS = fillProposalDropdown_(dbInst,cdFormID, cdDropdownID);
   console.log(retS)
-}
-
-/**
- * Purpose: Populate the spaces dropdown in the Proposal Start project
- *
- * @param  {string} formID- form ID
- * @param  {string} dropDownID - id string for dropdown
- * @return {string} retS - return "Success" or false
- */
-
-function fillSpacesDropdown_(formID, dropDownID) {
-  const fS = "fillSpacesDropdown_";
-  var retS;
-  try {
-    // get proposal array from db
-    var asfsfA = getSpaceDisplay(userEmail);  // gcloudSQL modified to this 210708
-    var ddvaluesA = asfsfA.map(pr => {
-      return pr.sdesc;
-    })
-    // get the dropdown from the form
-    var dd = FormApp.openById(formID).getItemById(dropDownID);
-    if (dd.getType() != FormApp.ItemType.LIST) {
-      throw new Error(`Item: ${dropDownID} is not a list!`);
-    }
-    else {
-      dd.asListItem().setChoiceValues(ddvaluesA);
-      Logger.log(`Updated ${formID} with spaces`);
-    }
-  } catch (err) {
-    console.log(`In ${fS}: ${err}`)
-    return false
-  }
-  retS = "Success";
-  return retS
 }
 
 /*
