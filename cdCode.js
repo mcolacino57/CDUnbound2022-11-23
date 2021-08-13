@@ -156,16 +156,15 @@ function handleBaseRent(dbInst, docInst, propID) {
  * Purpose: get information stored in JSON file, use it to update template for 
  * BrokerName, Broker License and Broker Email
  *
- * @param  {String} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {boolean} return - true or false
+ * @param  {object} dbInst - instance of databaseC
+ * @param  {object} docInst - instance of docC
+ * @return {boolean} t/f - return true or false
  */
 function handleJSON(dbInst, docInst) {
   var fS = "handleJSON", probS;
   var userPrefixS = userEmail.split('@')[0];
   var fileName = userPrefixS + ".json";
   try {
-    // var fileName = "mcolacino.json";
     var files = DriveApp.getFilesByName(fileName);
     if (files.hasNext()) {
       var file = files.next();
