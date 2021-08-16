@@ -4,8 +4,7 @@ testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandle
 testHandleBR,userEmail*/
 
 /*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
- getCurrPropID_,readFromTable,DriveApp,readInListFromTable,
- UnitTestingApp,maxRows*/
+ getCurrPropID_,readFromTable,DriveApp,readInListFromTable,maxRows*/
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -284,7 +283,7 @@ function handleExpenses(dbInst, docInst, propSize) {
   // all clauseKeys in expenses UPDATE if Operating Expenses form update
   var expInS =clauseKeyObjG.expenses
   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, ret, probS, elRepS;
+  var repClauseS, ret, probS, elRepS,retRepS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
@@ -309,8 +308,8 @@ function handleExpenses(dbInst, docInst, propSize) {
         }
       }
       if (pd.section === "RealEstateTaxes") {
-        pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        ret = updateTemplateBody("<<RealEstateTaxes>>", elRepS, docInst);
+        retRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
+        ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
         if (!ret ) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
@@ -460,9 +459,9 @@ const logChkMajorPropDetailCategories = false;
  * Also note that this uses the view prop_detail_ex which joins the clause table
  * with the prop_detail table. This is where the 
  *
- * @param  {String} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {boolean} return - object or false
+ * @param  {String} propID - proposal id
+ *
+ * @return {object} return - [incSec, excSec, excSec.length] or false
  */
 function chkMajorPropDetailCategories(propID) {
   try {
@@ -502,7 +501,7 @@ function chkMajorPropDetailCategories(propID) {
 
 const logLogStatusofData = false;
 /**
- * Purpose
+ * Purpose: check to see if major sections are represented in 
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 
@@ -528,23 +527,7 @@ function logStatusofData(propID) {
 
 
 
-function runTests() {
-  // dbInst = new databaseC("applesmysql");
-  //var form = FormApp.openById(formID_G);
-  //var dupePropS = "Tootco at 6 East 45"
-  //var userS = userEmail;
-  var propID = getCurrPropID_()[0];
-  const test = new UnitTestingApp();
-  test.enable(); // tests will run below this line
-  test.runInGas(true);
-  if (test.isEnabled) {
-    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
-    test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
-    test.assert(evalProposal(),`evalProposal -> propID ${propID}`)
 
-
-  }
-}
 
 /************************Utilities *********************** */
 const curr_formatter = new Intl.NumberFormat('en-US', {

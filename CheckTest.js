@@ -4,8 +4,7 @@ testPrintTitlesAndIDs,
 testGetClauseKeysThisForm,runTests
  */
 
-/*global fieldS_G , FormApp , databaseC, getClauseKeysThisForm ,formID_G ,
-setFieldString, emptyProp_Detail,evalTIResponses,emptyCk_Question,writeAllQuestionsKeys,testgetCurrPropID,
+/*global fieldS_G , userEmail , logStatusofData, evalProposal , chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC, getClauseKeysThisForm ,formID_G ,
 UnitTestingApp*/
 
 function testCrFormResponseArray() {
@@ -67,25 +66,20 @@ function testGetClauseKeysThisForm() {
 
 function runTests() {
   var dbInst = new databaseC("applesmysql");
-  var form = FormApp.openById(formID_G);
-  // var validQS = "Funky Tut?";
-  // var userS = "fredo@corleone.com";
-  // var userS = userEmail;
-  var propID = "";
+  //var form = FormApp.openById(formID_G);
+  //var dupePropS = "Tootco at 6 East 45"
+  var userS = userEmail;
+  var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();
   test.enable(); // tests will run below this line
   test.runInGas(true);
-  console.log("Deleting all records in prop_detail to run tests")
   if (test.isEnabled) {
-    test.assert(setFieldString(),`setFieldString: ${fieldS_G}`);
-    test.assert(emptyProp_Detail(), `emptyProp_Detail`);
-    test.assert(evalTIResponses(form), `evalTIResponses`);
-    test.assert(emptyCk_Question(), 'emptyCk_Question');
-    test.assert(writeAllQuestionsKeys(), 'writeAllQuestionsKeys');
-    test.assert(propID=testgetCurrPropID(), `testgetCurrPropID: ${propID}`);
+    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
+    test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
+    test.assert(evalProposal(),`evalProposal -> propID ${propID}`)
+
 
   }
-  dbInst.closeconn();
 }
 
 function crFormResponseArray(form) {
