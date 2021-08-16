@@ -1,7 +1,7 @@
 /*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
 testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
 testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
-testHandleBR*/
+testHandleBR,userEmail*/
 
 /*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
  getCurrPropID_,readFromTable,DriveApp,readInListFromTable,
@@ -17,7 +17,7 @@ const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Te
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 
 /************** clauseKey strings object ***********************/
-/* Modify these when form is modified especially when new questions/clauses/clauseKeys are added */
+/* UPDATE  these when form is modified especially when new questions/clauses/clauseKeys are added */
 const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
   security: "('secDeposit')",
@@ -53,18 +53,15 @@ function evalProposal() {
     // eslint-disable-next-line no-unused-vars
     [propID, propS] = getCurrPropID_(dbInst, userEmail);
     var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
-    // var r = setProposalCurrent(dbInst, propID);  Don't think this is needed given that we error check in getCurrPropID
-    // if (!ret) {
-    //   throw new Error(`can't set proposal ${propS} to current`)
-    // }
+    var propSize = propInst.getSize();
 
-    ret = handleExpenses(dbInst, docInst);
+    ret = handleExpenses(dbInst, docInst,propSize);
     logLoc ? Logger.log("Expenses: " + ret) : true;
-    ret = handleOver(dbInst, docInst);
+    ret = handleOver(dbInst, docInst,propSize);
     logLoc ? Logger.log("Over: " + ret) : true;
-    ret = handleTenAndPrem(dbInst, docInst, propS);
+    ret = handleTenAndPrem(dbInst, docInst, propS,propSize);
     logLoc ? Logger.log("Premises: " + ret) : true;
-    ret = handleTI(dbInst, docInst);
+    ret = handleTI(dbInst, docInst,propSize);
     logLoc ? Logger.log("TI: " + ret) : true;
     ret = handleJSON(dbInst, docInst);
     logLoc ? Logger.log("JSON: " + ret) : true;
@@ -80,10 +77,7 @@ function evalProposal() {
   return true
 }
 
-
-/*********** handleBaseRent********/
 var logHandleBaseRent = false;
-
 /**
  * Purpose: Handle base rent
  *
@@ -92,7 +86,6 @@ var logHandleBaseRent = false;
  * @param  {String} propID - proposal ID
  * @@return {boolean} return - true or false
  */
-
 function handleBaseRent(dbInst, docInst, propID) {
   var fS="handleBaseRent";
   var locLog = logHandleBaseRent;
@@ -137,7 +130,7 @@ function handleBaseRent(dbInst, docInst, propID) {
     ]
     t.push(row);
   }
-  locLog ? console.log(t) : true;
+  locLog ? Logger.log(t) : true;
   c0.insertTable(2, t); // insert the table at c0 created above, third paragraph
   var s = c0.getChild(1).getType().toString();
   s = c0.getChild(2).getType().toString();
@@ -148,7 +141,7 @@ function handleBaseRent(dbInst, docInst, propID) {
      Logger.log(`In ${fS}: ${err}`);
     return false
   }
-  locLog ? console.log( `Base Rent Updated for id ${propID}`) : true;
+  locLog ? Logger.log( `Base Rent Updated for id ${propID}`) : true;
   return true
 }
 
@@ -196,7 +189,8 @@ function handleJSON(dbInst, docInst) {
  * @param  {Object} docInst - instance of document class
  * @return {boolean} return - true or false
  */
-function handleTI(dbInst, docInst) {
+// attempted fix on propSize
+function handleTI(dbInst, docInst, propSize) {
   var fS = "handleTI", probS, repClauseS;
   var tiInS = clauseKeyObjG.ti;
   //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
@@ -204,6 +198,8 @@ function handleTI(dbInst, docInst) {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
     var tiTerms = "";
     pdA.forEach((pd) => {
+      if (!correctSize(propSize, pd.clausesize)) return;
+
       if (pd.proposalclausekey === "tiAllow") {
         var tiDollars = curr_formatter.format(pd.proposalanswer);
         updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
@@ -232,8 +228,11 @@ function handleTI(dbInst, docInst) {
  * @param  {Object} docInst - instance of document class
  * @return {boolean} return - true or false
  */
-function handleTenAndPrem(dbInst, docInst, propIDS) {
+// attempted fix for propSize
+function handleTenAndPrem(dbInst, docInst, propIDS,propSize) {
   var fS = "handleTenAndPrem", probS;
+  var foundCorrectSize = false;
+  var premClauseBody = "";
   try {
     var jsonyn = false;
     var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, jsonyn);
@@ -241,8 +240,20 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
     var tenantNameS = retA[0].tenantname;
     retA = readFromTable(dbInst, "survey_spaces", "identity", spid, jsonyn);
     var spA = retA[0]
-    retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
-    var premClauseBody = retA[0].clausebody;
+    //retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
+    
+    var pdA = readInListFromTable(dbInst, "clauses", "ClauseKey", "('premises')");
+    for(var i = 0; i < pdA.length; i++){
+      if (correctSize(propSize, pdA[i].clausesize)) {
+        foundCorrectSize = true;
+        premClauseBody = pdA[i].clausebody;
+      }
+    }
+    // Note: if there are more than one premises clauses that match the propSize
+    // you get the last (latest?) one
+    if (!foundCorrectSize) {
+      throw new Error(`in ${fS} no premises record for proposal size ${propSize}`)
+    }
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
     premClauseBody = premClauseBody.replace("<<FloorAndSuite>>", spA.floorandsuite);
@@ -264,11 +275,11 @@ function handleTenAndPrem(dbInst, docInst, propIDS) {
  *
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
-
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {boolean} return - true or false
+ * @param  {Object} propInst - instance of proposalC
+ * @return {boolean} t/f - return true or false
  */
-function handleExpenses(dbInst, docInst) {
+// fixed to include propSize
+function handleExpenses(dbInst, docInst, propSize) {
   var fS = "handleExpenses";
   // all clauseKeys in expenses UPDATE if Operating Expenses form update
   var expInS =clauseKeyObjG.expenses
@@ -277,6 +288,8 @@ function handleExpenses(dbInst, docInst) {
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
+      if (!correctSize(propSize, pd.clausesize)) return;
+
       if (pd.section === "OperatingExpenses") {
         repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
@@ -313,6 +326,21 @@ function handleExpenses(dbInst, docInst) {
 }
 
 /**
+ * Purpose
+ *
+ * @param  {string} propSize - size of proposal
+ * @param  {string} clauseSize - size of clause 
+ * @return {boolean} t/f - return ture or false
+ */
+function correctSize(propSize, clauseSize) {
+  if (clauseSize === propSize ) return true;
+  if (clauseSize.includes("A") ) return true;
+  if (clauseSize.includes(propSize)) return true;
+  return false
+}
+
+/**
+ * 
  * Purpose: Replaces elements from  Proposal Start and Proposal Overview, including DateOfProposal
  * from prop_detail_ex
  *
@@ -320,8 +348,9 @@ function handleExpenses(dbInst, docInst) {
  * @param  {Object} docInst - instance of documenC
  * @return {boolean} return - true or false
  */
+// fixed to handle propSize
 
-function handleOver(dbInst, docInst) {
+function handleOver(dbInst, docInst,propSize) {
   var fS = "handleOver";
   var probS, repClauseS, repS, ret;
   // first handle clauses, then direct replacements
@@ -330,6 +359,7 @@ function handleOver(dbInst, docInst) {
     var overInsCl = clauseKeyObjG.security;
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
     pdA.forEach((pd) => {
+      if (!correctSize(propSize, pd.clausesize)) return;
       repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
       ret = updateTemplateBody(pd.replstruct, repClauseS, docInst);
       if (!ret) {
@@ -342,6 +372,7 @@ function handleOver(dbInst, docInst) {
     var overInsS = clauseKeyObjG.overview;
     pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
     pdA.forEach((pd) => {
+      if (!correctSize(propSize, pd.clausesize)) return;
       if (pd.proposalclausekey === "commDate") {
         // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
         var dA = pd.proposalanswer.split('-');

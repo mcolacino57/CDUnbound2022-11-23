@@ -254,7 +254,7 @@ function writeCk_Question(dbInst,qcrRec){
   }
 try {
   var qryS = `INSERT INTO ck_question (${colS}) VALUES(${recordS});`;
-  console.log(qryS);
+  // console.log(qryS);
   var locConn = dbInst.getconn(); // get connection from the instance
   var stmt = locConn.prepareStatement(qryS);
   stmt.execute();
@@ -278,7 +278,7 @@ function emptyCk_Question(){
   var dbInst = new databaseC("applesmysql");
   try {
   var qryS = `Delete from ck_question where ClauseKey in (${fieldS_G});`;
-  console.log(qryS);
+  // console.log(qryS);
   var locConn = dbInst.getconn(); // get connection from the instance
   var stmt = locConn.prepareStatement(qryS);
   stmt.execute();

@@ -1,6 +1,6 @@
-/*global Logger,databaseC,*/
+/*global Logger,databaseC,userEmail*/
 /*exported getProposalNamesAndIDs,getSpaceDisplay,getProposalData,
-readInListFromTable,setProposalCurrent */
+readInListFromTable,setProposalCurrent,testGetPropSize */
 /****************Called from other gs files*************** */
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
@@ -169,7 +169,6 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
   */
 
 function getProposalNamesAndIDs(dbInst, userS = "mcolacino@squarefoot.com") {
-  // var dbInst = new databaseC("applesmysql");
   var tableNameS = "proposals";
   var colNameS = "CreatedBy";
   var searchS = userS;
@@ -181,6 +180,47 @@ function getProposalNamesAndIDs(dbInst, userS = "mcolacino@squarefoot.com") {
   //console.log(propNameIDA)
   return propNameIDA
 }
+
+/**
+ * Purpose: Get the size of the current proposal
+ *
+ * @param  {object} dbInst - instance of databaseC
+ * @param  {string} propID - proposal id
+ * @return {String} retS - return S/M/L
+ */
+function getPropSize(dbInst, propID, userS) {
+  var fS = "getPropSize";
+  try {
+    var locConn = dbInst.getconn(); 
+    var qryS = `SELECT ProposalSize FROM proposals WHERE ProposalID = '${propID}' AND CreatedBy = '${userS}'`;
+    var stmt = locConn.prepareStatement(qryS);
+    var results = stmt.executeQuery(qryS);
+    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+      var value = results.getString("ProposalSize")      
+      } 
+  } catch(err) {
+  var probS = `In ${fS} error ${err}`;
+  console.log(probS);
+  return false
+  }
+  return value
+}
+
+
+function testGetPropSize() {
+  var dbInst = new databaseC("applesmysql");
+  // eslint-disable-next-line no-unused-vars
+  var [propID, propName] = getCurrentProposal(dbInst, userEmail)
+  if (propID) {
+    var retS = getPropSize(dbInst, propID, userEmail);
+    console.log(retS);
+    return true
+  } else {
+    console.log("testGetPropSize failed");
+    return false
+  }
+}
+
 
 /**
  * Purpose: Join spaces and buildings (view?) to get SpaceID / Floor / Suite / Square Footage
@@ -225,7 +265,7 @@ function getProposalData(userS = "mcolacino@squarefoot.com") {
   var propDataA = ret.map(function (record) {
     return [record.fields.proposalname, record.fields.proposalid, record.fields.proposallocation, record.fields.proposalsize]
   })
-  console.log(propDataA)
+  // console.log(propDataA)
   return propDataA
 }
 
@@ -258,7 +298,7 @@ const logSetProposalCurrent = false;
 function setProposalCurrent(dbInst, propID) {
   var fS = "setProposalCurrent";
   try {
-    // var pid = propInst.getpropID(); remove when this is tested
+    // var pid = propInst.getPropID(); remove when this is tested
     var locConn = dbInst.getconn(); // get connection from the instance
     // first set all proposal current -> false
     locConn = dbInst.getconn(); // get connection from the instance
@@ -277,7 +317,46 @@ function setProposalCurrent(dbInst, propID) {
 }
 
 /**
- * Purpose: 
+ * Purpose: get current proposal from db
+ *
+ * @param  {object} dbInst - instance of databaseC
+ * @param  {string} userS - name of current user
+ * @return {boolean[]} [pid, pN] or [false,false]
+ */
+
+ // eslint-disable-next-line no-unused-vars
+ function getCurrentProposal(dbInst, userS) {
+  const fS = "getCurrentProposal";
+   var pid = "";
+   var pN = "";
+  try {
+    const locConn = dbInst.getconn(); // get connection from the instance
+
+    const qryS = `SELECT ProposalID, ProposalName FROM proposals WHERE current=true;`;
+    const stmt = locConn.prepareStatement(qryS);
+    const results = stmt.executeQuery(qryS);
+    var cntr = 0;
+    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+      pid = results.getString("ProposalID");
+      pN = results.getString("ProposalName");
+      cntr++;
+      // column can either be by number or by string 
+    }
+    if (cntr === 0 || pid==="") { throw new Error(`no current proposal`) }
+    if (cntr > 1) { throw new Error(`more than one current proposal`) }
+    return [pid,pN]
+
+  } catch (err) {
+    const probS = `In ${fS}: error ${err}`;
+    console.log(probS);
+    return [false,false] 
+  }
+}
+
+
+const logReadInListFromTable = false;
+/**
+ * Purpose: Read in list of values for the table, using colS and inListS
  *
  * @param  {Object} dbInst - instance of database class
  * @param {String} tableNameS - table to read
@@ -288,7 +367,6 @@ function setProposalCurrent(dbInst, propID) {
  * return value is in the form: 
  */
 
- const logReadInListFromTable = false;
  function readInListFromTable(dbInst, tableNameS, colS, inListS) {
    var fS = "readInListFromTable";
    var logLoc = logReadInListFromTable;
