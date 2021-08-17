@@ -1,7 +1,7 @@
 /*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
 testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
 testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
-testHandleBR,userEmail*/
+testHandleBR,userEmail,logStatusofData*/
 
 /*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
  getCurrPropID_,readFromTable,DriveApp,readInListFromTable,maxRows*/
@@ -44,7 +44,7 @@ const logEvalProposal = false;
 function evalProposal() {
   const fS = "evalProposal";
   const logLoc = logEvalProposal;
-  var ret,propID,propS;
+  var ret, propID, propS;
   try {
     var dbInst = new databaseC("applesmysql");
     var docInst = new docC(docID, foldID);
@@ -54,18 +54,30 @@ function evalProposal() {
     var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
     var propSize = propInst.getSize();
 
-    ret = handleExpenses(dbInst, docInst,propSize);
+    ret = handleExpenses(dbInst, docInst, propSize);
     logLoc ? Logger.log("Expenses: " + ret) : true;
-    ret = handleOver(dbInst, docInst,propSize);
+    if(!ret) { throw new Error(`handleExpenses returned false`)}
+   
+    ret = handleOver(dbInst, docInst, propSize);
     logLoc ? Logger.log("Over: " + ret) : true;
-    ret = handleTenAndPrem(dbInst, docInst, propS,propSize);
+    if(!ret) { throw new Error(`handleOver returned false`)}
+
+    ret = handleTenAndPrem(dbInst, docInst, propS, propSize);
     logLoc ? Logger.log("Premises: " + ret) : true;
-    ret = handleTI(dbInst, docInst,propSize);
+    if(!ret) { throw new Error(`handleTenAndPrem returned false`)}
+
+    ret = handleTI(dbInst, docInst, propSize);
     logLoc ? Logger.log("TI: " + ret) : true;
+    if(!ret) { throw new Error(`handleTI returned false`)}
+
     ret = handleJSON(dbInst, docInst);
     logLoc ? Logger.log("JSON: " + ret) : true;
+    if(!ret) { throw new Error(`handleJSON returned false`)}
+
     ret = handleBaseRent(dbInst, docInst, propInst);
     logLoc ? Logger.log("BR: " + ret) : true;
+    if(!ret) { throw new Error(`handleBaseRent returned false`)}
+
 
   } catch (err) {
     Logger.log(`In ${fS}: ${err}`);
@@ -81,66 +93,70 @@ var logHandleBaseRent = false;
  * Purpose: Handle base rent
  *
  * @param {Object} dbInst - instance of databaseC
- * @param  {Object} docInst - document instance
- * @param  {String} propID - proposal ID
+ * @param  {Object} docInst - docC instance
+ * @param  {object} propInst - proposalC instance
  * @@return {boolean} return - true or false
  */
-function handleBaseRent(dbInst, docInst, propID) {
-  var fS="handleBaseRent";
+function handleBaseRent(dbInst, docInst, propInst) {
+  var fS = "handleBaseRent";
   var locLog = logHandleBaseRent;
+
   try {
-  var offsetObj = {}, offset = 0;
-  // get the local doc body from the doc instance
-  var doc = docInst.locBody;
-  // Find the replacement text
-  var rgel = doc.findText("<<BaseRentalRate>>");
-  var el = rgel.getElement().getParent(); // take the found element and get its parent
-  var loopCtl = el.toString()  // use the type of the parent (as string) to start the loop
-  while (loopCtl != "BODY_SECTION") { // stop when you get to the body section
-    var par = el.getParent();
-    var parType = par.getType(); // put parent type into var
-    el = par; // make the parent into the current element, el 
-    offset = el.getParent().getChildIndex(el); // go up and down to count siblings
-    loopCtl = parType.toString();
-    offsetObj[loopCtl] = offset;
-  }
-  /* At this point we know that the basic structure is table/table row/table cell/paragraph. Go down the structure by using getChild, stopping at cell. Use the offset list to determine which child should be looked at. Look at the child of the cell (a paragraph FYI) and null out the second paragraph which should be "<<BaseRentalRate>>". Note this will break if there is a new line or anythig added as a second paragraph in the templace cell */
-  var t0 = doc.getChild(offsetObj["TABLE"]);
-  var r0 = t0.getChild(offsetObj["TABLE_ROW"]);
-  var c0 = r0.getChild(offsetObj["TABLE_CELL"]);
-  //c0.getChild(1).asText().setText('');  // delete <<BaseRentalRate>>
-  doc.replaceText("<<BaseRentalRate>>", '\n');
+    var propID = propInst.getID();
+    var offsetObj = {}, offset = 0;
+    // get the local doc body from the doc instance
+    var doc = docInst.locBody;
+    // Find the replacement text
+    var rgel = doc.findText("<<BaseRentalRate>>");
+    var el = rgel.getElement().getParent(); // take the found element and get its parent
+    var loopCtl = el.toString()  // use the type of the parent (as string) to start the loop
+    while (loopCtl != "BODY_SECTION") { // stop when you get to the body section
+      var par = el.getParent();
+      var parType = par.getType(); // put parent type into var
+      el = par; // make the parent into the current element, el 
+      offset = el.getParent().getChildIndex(el); // go up and down to count siblings
+      loopCtl = parType.toString();
+      offsetObj[loopCtl] = offset;
+    }
+    /* At this point we know that the basic structure is table/table row/table cell/paragraph. Go down the structure by using getChild, stopping at cell. Use the offset list to determine which child should be looked at. Look at the child of the cell (a paragraph FYI) and null out the second paragraph which should be "<<BaseRentalRate>>". Note this will break if there is a new line or anythig added as a second paragraph in the templace cell */
+    var t0 = doc.getChild(offsetObj["TABLE"]);
+    var r0 = t0.getChild(offsetObj["TABLE_ROW"]);
+    var c0 = r0.getChild(offsetObj["TABLE_CELL"]);
+    //c0.getChild(1).asText().setText('');  // delete <<BaseRentalRate>>
+    doc.replaceText("<<BaseRentalRate>>", '\n');
 
-  // go to the DB and get the proposed rental rates associated with this spaceID
-  // var retBR = getBySpaceID(spaceID, "proposedrent");
-  var jsonyn = false;
-  var records = readFromTable(dbInst, "base_rent", "ProposalID", propID, jsonyn);
-
-  // call the sort function (below) to order by begin date (note should be done in DB)
-  records.sort(sortDate);
-  // create the base rent table; header first
-  var t = [["Begin Date", "End Date", "Rent PSF"]];
-  // for all the base records, push the created row onto the table
-  for (var j = 0; j < records.length; j++) {
-    var row = [
-      Utilities.formatDate(new Date(records[j].begindate), "GMT+1", "MMMM d, yyyy"),
-      Utilities.formatDate(new Date(records[j].enddate), "GMT+1", "MMMM d, yyyy"),
-      curr_formatter.format(records[j].rentpsf)
-    ]
-    t.push(row);
+    // go to the DB and get the proposed rental rates associated with this spaceID
+    // var retBR = getBySpaceID(spaceID, "proposedrent");
+    var jsonyn = false;
+    var records = readFromTable(dbInst, "base_rent", "ProposalID", propID, jsonyn);
+    if (records.length === 0) {
+      throw new Error(`no base rent records found for proposal ${propID}`);
+    }
+    // call the sort function (below) to order by begin date (note should be done in DB)
+    records.sort(sortDate);
+    // create the base rent table; header first
+    var t = [["Begin Date", "End Date", "Rent PSF"]];
+    // for all the base records, push the created row onto the table
+    for (var j = 0; j < records.length; j++) {
+      var row = [
+        Utilities.formatDate(new Date(records[j].begindate), "GMT+1", "MMMM d, yyyy"),
+        Utilities.formatDate(new Date(records[j].enddate), "GMT+1", "MMMM d, yyyy"),
+        curr_formatter.format(records[j].rentpsf)
+      ]
+      t.push(row);
+    }
+    locLog ? Logger.log(t) : true;
+    c0.insertTable(2, t); // insert the table at c0 created above, third paragraph
+    var s = c0.getChild(1).getType().toString();
+    s = c0.getChild(2).getType().toString();
+    // eslint-disable-next-line no-unused-vars
+    s = c0.getChild(3).getType().toString();
   }
-  locLog ? Logger.log(t) : true;
-  c0.insertTable(2, t); // insert the table at c0 created above, third paragraph
-  var s = c0.getChild(1).getType().toString();
-  s = c0.getChild(2).getType().toString();
-  // eslint-disable-next-line no-unused-vars
-  s = c0.getChild(3).getType().toString();
-  }
-  catch (err){
-     Logger.log(`In ${fS}: ${err}`);
+  catch (err) {
+    Logger.log(`In ${fS}: ${err}`);
     return false
   }
-  locLog ? Logger.log( `Base Rent Updated for id ${propID}`) : true;
+  locLog ? Logger.log(`Base Rent Updated for id ${propID}`) : true;
   return true
 }
 
@@ -228,7 +244,7 @@ function handleTI(dbInst, docInst, propSize) {
  * @return {boolean} return - true or false
  */
 // attempted fix for propSize
-function handleTenAndPrem(dbInst, docInst, propIDS,propSize) {
+function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
   var fS = "handleTenAndPrem", probS;
   var foundCorrectSize = false;
   var premClauseBody = "";
@@ -240,9 +256,9 @@ function handleTenAndPrem(dbInst, docInst, propIDS,propSize) {
     retA = readFromTable(dbInst, "survey_spaces", "identity", spid, jsonyn);
     var spA = retA[0]
     //retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
-    
+
     var pdA = readInListFromTable(dbInst, "clauses", "ClauseKey", "('premises')");
-    for(var i = 0; i < pdA.length; i++){
+    for (var i = 0; i < pdA.length; i++) {
       if (correctSize(propSize, pdA[i].clausesize)) {
         foundCorrectSize = true;
         premClauseBody = pdA[i].clausebody;
@@ -281,9 +297,9 @@ function handleTenAndPrem(dbInst, docInst, propIDS,propSize) {
 function handleExpenses(dbInst, docInst, propSize) {
   var fS = "handleExpenses";
   // all clauseKeys in expenses UPDATE if Operating Expenses form update
-  var expInS =clauseKeyObjG.expenses
+  var expInS = clauseKeyObjG.expenses
   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
-  var repClauseS, ret, probS, elRepS,retRepS;
+  var repClauseS, ret, probS, elRepS, retRepS;
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
@@ -310,7 +326,7 @@ function handleExpenses(dbInst, docInst, propSize) {
       if (pd.section === "RealEstateTaxes") {
         retRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
-        if (!ret ) {
+        if (!ret) {
           throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
         }
       }
@@ -332,8 +348,8 @@ function handleExpenses(dbInst, docInst, propSize) {
  * @return {boolean} t/f - return ture or false
  */
 function correctSize(propSize, clauseSize) {
-  if (clauseSize === propSize ) return true;
-  if (clauseSize.includes("A") ) return true;
+  if (clauseSize === propSize) return true;
+  if (clauseSize.includes("A")) return true;
   if (clauseSize.includes(propSize)) return true;
   return false
 }
@@ -349,7 +365,7 @@ function correctSize(propSize, clauseSize) {
  */
 // fixed to handle propSize
 
-function handleOver(dbInst, docInst,propSize) {
+function handleOver(dbInst, docInst, propSize) {
   var fS = "handleOver";
   var probS, repClauseS, repS, ret;
   // first handle clauses, then direct replacements
@@ -387,8 +403,8 @@ function handleOver(dbInst, docInst,propSize) {
 
     ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
     if (!ret) {
-        throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
-      }
+      throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+    }
   }
   catch (err) {
     probS = `In ${fS}: ${err}`
@@ -433,7 +449,7 @@ function updateTemplateBody(replStructure, replText, docInst) {
   //Then we call replaceText method
   try {
     docInst.locBody.replaceText(replStructure, replText);
-      } catch (err) {
+  } catch (err) {
     var probS = `In ${fS}: unable to update ${replStructure}`;
     throw new Error(probS)
   }

@@ -182,7 +182,6 @@ class databaseC {
     this.instanceUrl = 'jdbc:google:mysql://' + this.connectionName;
     this.dbUrl = this.instanceUrl + '/' + this.db;
     this.connectParam = `dbUrl: ${this.dbUrl} user: ${this.user} and ${this.userPwd}`;
-    // console.log("Inside databaseC " + this.connectParam);
     this.conn = Jdbc.getCloudSqlConnection(this.dbUrl, this.user, this.userPwd);
     this.colA = [];
   }

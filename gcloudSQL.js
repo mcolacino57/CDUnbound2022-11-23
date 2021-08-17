@@ -23,7 +23,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
   /*********connect to database ************************************ */
   try {
     var locConn = dbInst.getconn(); // get connection from the instance
-    logLoc ? console.log(locConn.toString()) : true;
+    logLoc ? console.log(`In ${fS} ${locConn.toString()}`) : true;
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
   } catch (err) {
@@ -48,7 +48,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
     dataA.push(recA); // push inner array into outside array
   }
   // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
-  logLoc ? console.log(dataA) : true;
+  logLoc ? console.log(`In ${fS} dataA is ${dataA}`) : true;
 
   /**************************now get the header names ************************** */
   qryS = `SHOW COLUMNS FROM ${tableNameS};`
@@ -66,7 +66,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
   }
 
   var rowA = splitRangesToObjects(colA, dataA); // utility function in objUtil.gs
-  logLoc ? console.log(rowA) : true;
+  logLoc ? console.log(`In ${fS}: rowA`) : true;
 
   results.close();
   stmt.close();
@@ -82,7 +82,6 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
     retObj["fields"] = rowA[j];
     retA.push(retObj);
   }
-  // console.log(retA);
   if (jsonyn) { 
     return retA }
   else { 
@@ -131,7 +130,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
      }
      dataA.push(recA); // push inner array into outside array
    }
-   logLoc ? console.log(dataA) : true;
+   logLoc ? console.log(`In ${fS} dataA: ${dataA}`) : true;
  
    /**************************now get the header names ************************** */
    try {
@@ -142,7 +141,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn) {
      return problemS
    }
    var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
-   logLoc ? console.log(rowA) : true;
+   logLoc ? console.log(`In ${fS} rowA: ${rowA}`) : true;
    results.close();
    stmt.close();
    var retA = [];
@@ -177,7 +176,6 @@ function getProposalNamesAndIDs(dbInst, userS = "mcolacino@squarefoot.com") {
   var propNameIDA = ret.map(function (record) {
     return [record.proposalname, record.proposalid]
   })
-  //console.log(propNameIDA)
   return propNameIDA
 }
 
@@ -213,7 +211,7 @@ function testGetPropSize() {
   var [propID, propName] = getCurrentProposal(dbInst, userEmail)
   if (propID) {
     var retS = getPropSize(dbInst, propID, userEmail);
-    console.log(retS);
+    console.log(`In testGetPropSize: ${retS}`);
     return true
   } else {
     console.log("testGetPropSize failed");
@@ -242,7 +240,7 @@ function getSpaceDisplay(userS = "mcolacino@squarefoot.com") {
       sidentity: record.fields.spaceidentity  // note that somewhere along the way underscore gets stripped
     }
   })
-  logGetSpaceDisplay ? console.log(spaceA) : true;
+  logGetSpaceDisplay ? console.log(`In getSpaceDisplay: ${spaceA}`) : true;
   return spaceA
 
 }
@@ -265,7 +263,6 @@ function getProposalData(userS = "mcolacino@squarefoot.com") {
   var propDataA = ret.map(function (record) {
     return [record.fields.proposalname, record.fields.proposalid, record.fields.proposallocation, record.fields.proposalsize]
   })
-  // console.log(propDataA)
   return propDataA
 }
 
@@ -306,7 +303,6 @@ function setProposalCurrent(dbInst, propID) {
     var stmt = locConn.prepareStatement(qryS1);
     stmt.execute();
     var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= '${propID}';`;
-    // console.log(qryS);
     stmt = locConn.prepareStatement(qryS2);
     stmt.execute();
   } catch (err) {
@@ -374,7 +370,7 @@ const logReadInListFromTable = false;
    /*********connect to database ************************************ */
    try {
      var locConn = dbInst.getconn(); // get connection from the instance
-     logLoc ? console.log(locConn.toString()) : true;
+     logLoc ? console.log(`In ${fS} ${locConn.toString()}`) : true;
      var stmt = locConn.createStatement();
      stmt.setMaxRows(maxRows);
    } catch (err) {
@@ -384,7 +380,7 @@ const logReadInListFromTable = false;
    }
    /******************extract rows that meet select criteria ********* */
    var qryS = `SELECT * FROM ${tableNameS} where ${colS} IN ${inListS};`;
-   logLoc ? console.log(qryS) : true;
+   logLoc ? console.log(`In ${fS} qryS: ${qryS}`) : true;
    try {
      var results = stmt.executeQuery(qryS);
      var numCols = results.getMetaData().getColumnCount();
@@ -402,7 +398,7 @@ const logReadInListFromTable = false;
      dataA.push(recA); // push inner array into outside array
    }
    // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
-   logLoc ? console.log(dataA) : true;
+   logLoc ? console.log(`In ${fS} dataA: ${dataA}`) : true;
  
    /**************************now get the header names ************************** */
    qryS = `SHOW COLUMNS FROM ${tableNameS};`
@@ -420,7 +416,7 @@ const logReadInListFromTable = false;
    }
  
    var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
-   logLoc ? console.log(rowA) : true;
+   logLoc ? console.log(`In ${fS} rowA: ${rowA}`) : true;
  
    results.close();
    stmt.close();

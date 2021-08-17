@@ -4,13 +4,13 @@ testPrintTitlesAndIDs,
 testGetClauseKeysThisForm,runTests
  */
 
-/*global fieldS_G , userEmail , logStatusofData, evalProposal , chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC, getClauseKeysThisForm ,formID_G ,
+/*global fieldS_G , crFormResponseArray, userEmail , logStatusofData, evalProposal , chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC, getClauseKeysThisForm ,formID_G ,
 UnitTestingApp*/
 
 function testCrFormResponseArray() {
   var f = FormApp.getActiveForm();
   var resp = crFormResponseArray(f);
-  console.log(resp)
+  console.log(`In testCrFormResponseArray: ${resp}`)
 }
 
 // logs all of the titles of items in a form 
@@ -41,7 +41,7 @@ function printTitlesAndIDS_(formID) {
 
 function testPrintTitlesAndIDs() {
   var retS = printTitlesAndIDS_(formID_G);
-  console.log(retS)
+  console.log(`In testPrintTitlesAndIDs: ${retS}`)
 }
 
 /**
@@ -61,7 +61,7 @@ function testGetClauseKeysThisForm() {
 }
   retS = retS+ret[l-1];
   fieldS_G==retS ? console.log("fieldS_G equals retS"): console.log("fieldS_G not equal to retS");
-  console.log(retS)
+  console.log(`In testGetClauseKeysThisForm: ${retS}`)
 }
 
 function runTests() {
@@ -80,22 +80,4 @@ function runTests() {
 
 
   }
-}
-
-function crFormResponseArray(form) {
-  // Use the global form ID and log the responses to each question.
-  var respB = [];
-  var formResponses = form.getResponses();
-  // console.log("Number of responses is %s ", formResponses.length)
-  for (var i = 0; i < formResponses.length; i++) {
-    var respA = [];
-    var formResponse = formResponses[i];
-    var itemResponses = formResponse.getItemResponses();
-    for (var j = 0; j < itemResponses.length; j++) {
-      var itemResponse = itemResponses[j];
-      respA.push({ "question": itemResponse.getItem().getTitle(), "answer": itemResponse.getResponse() });
-    }
-    respB.push([respA]);
-  }
-  return respB
 }

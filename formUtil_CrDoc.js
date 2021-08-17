@@ -1,7 +1,8 @@
-/*exported getItemResps,testCrFormResponseArray,testDisplayTitlesAndIDs,testExamineForm ,
-runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,writeAllQuestionsKeys,emptyCk_Question,
+/*exported getItemResps,testDisplayTitlesAndIDs,testExamineForm ,
+runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,
+writeAllQuestionsKeys,emptyCk_Question,crFormResponseArray,
 setOverviewDesc */
-/*global Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
+/*global examineForm, Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
 cdFormID,cdDropdownID
 */
 // 210727 9:55
@@ -21,17 +22,7 @@ const fieldS_G = ""; // Note that this code doesn't delete from ck_question and 
 * function responseByItemID(form, itemtosearch)
  */
 
-// logs all of the titles of items in a form 
-function examineForm(f) {
-  var fitems = f.getItems();
-  for (var j = 0; j < fitems.length; j++) {
-    var title = fitems[j].getTitle()
-    var id = fitems[j].getId();
-    var itemTypeIs = fitems[j].getType();
-    var typeS = itemTypeIs.toString();
-    console.log(`Item title for: #${j} - ${title} ID: ${id} - type ${typeS}`);
-  }
-}
+
 
 /**
  * Purpose: get a list of items from the form; assumes just one response. Change if there are multiple responsess
@@ -62,18 +53,13 @@ function getItemResps(form) {
 /**
  * function testFillSpacesDropdown() 
  * function testDisplayTitlesAndIDs()
- * function testCrFormResponseArray()
  * function testExamineForm()
  */
 
 
 function testDisplayTitlesAndIDs() {
   var retS = displayTitlesAndIDS_(formID_G);
-  console.log(retS)
-}
-function testCrFormResponseArray() {
-  var f = FormApp.openById(formID_G);
-  var ret = crFormResponseArray(f); console.log(ret)
+  console.log(`In testDisplayTitlesAndIDs ${retS}`)
 }
 
 function testExamineForm() {
@@ -94,7 +80,6 @@ function testExamineForm() {
  * function runFillProposalDropDown()
  * function displayTitlesAndIDS_(formID)
  * function testPrintTitlesAndIDs() 
- * function crFormResponseArray(form)
  */
 
 /**
@@ -134,7 +119,7 @@ function fillProposalDropdown_(dbInst, formID, dropDownID) {
 function runFillProposalDropDown() {
   var dbInst = new databaseC("applesmysql");
   var retS = fillProposalDropdown_(dbInst,cdFormID, cdDropdownID);
-  console.log(retS)
+  console.log(`In runFillProposalDropDown: ${retS}`)
 }
 
 /*
@@ -155,7 +140,6 @@ function crFormResponseArray(form) {
   // Use the global form ID and log the responses to each question.
   var respA = [];
   var formResponses = form.getResponses();
-  // console.log("Number of responses is %s ", formResponses.length)
   for (var i = 0; i < formResponses.length; i++) {
     var formResponse = formResponses[i];
     var itemResponses = formResponse.getItemResponses();
@@ -234,7 +218,6 @@ function crFormKeyArray(formID) {
     console.log(`In ${fS}: ${e}`);
     return false
   }
-  // console.log(qcrA);
   return qcrA
 }
 
@@ -254,7 +237,6 @@ function writeCk_Question(dbInst,qcrRec){
   }
 try {
   var qryS = `INSERT INTO ck_question (${colS}) VALUES(${recordS});`;
-  // console.log(qryS);
   var locConn = dbInst.getconn(); // get connection from the instance
   var stmt = locConn.prepareStatement(qryS);
   stmt.execute();
@@ -278,7 +260,6 @@ function emptyCk_Question(){
   var dbInst = new databaseC("applesmysql");
   try {
   var qryS = `Delete from ck_question where ClauseKey in (${fieldS_G});`;
-  // console.log(qryS);
   var locConn = dbInst.getconn(); // get connection from the instance
   var stmt = locConn.prepareStatement(qryS);
   stmt.execute();

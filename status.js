@@ -40,7 +40,7 @@ that the proposal marked as "current" will be the one of interest
      logGetCurrPropID ? Logger.log(probS) : true;
      throw new Error(probS) // send up to calling function
    }
-   logGetCurrPropID ? console.log(propID) : true;
+   logGetCurrPropID ? console.log(`In ${fS} propID: ${propID}`) : true;
    if (propID === "") {
      return [false, false]
    }
@@ -73,7 +73,6 @@ function extractPropDetail_(propID) {
     return "Problem"
   }
   dbInst.closeconn();
-  //console.log(dataA);
   return dataA
 }
 
@@ -81,6 +80,5 @@ function executeStatus() {
   var retA = getCurrPropID_();
   var ret = extractPropDetail_(retA[0]);
   return ret
-  // console.log(ret);
 
 }
