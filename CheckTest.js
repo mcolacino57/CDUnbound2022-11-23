@@ -1,10 +1,10 @@
 /*exported testCrFormResponseArray, 
 testExamineForm,
 testPrintTitlesAndIDs, 
-testGetClauseKeysThisForm,runTests
+testGetCKThisForm,runTests
  */
 
-/*global fieldS_G , crFormResponseArray, userEmail , logStatusofData, evalProposal , chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC, getClauseKeysThisForm ,formID_G ,
+/*global fieldS_G , crFormResponseArray, userEmail , logStatusofData, evalProposal , chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC ,formID_G ,
 UnitTestingApp*/
 
 function testCrFormResponseArray() {
@@ -43,6 +43,37 @@ function testPrintTitlesAndIDs() {
   var retS = printTitlesAndIDS_(formID_G);
   console.log(`In testPrintTitlesAndIDs: ${retS}`)
 }
+/**
+ * Purpose: Get clauseKeys for global form
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {String} retS - return value
+ */
+ function getCKThisForm(dbInst,formName) {
+  const fS = "getCKThisForm";
+  var resA = [];
+  try {
+    const locConn = dbInst.getconn(); // get connection from the instance 
+    const qryS = `SELECT ClauseKey FROM ck_question WHERE FormName='${formName}';`;
+    const stmt = locConn.prepareStatement(qryS);
+    const results = stmt.executeQuery(qryS);
+
+    if (!results.last()) {
+      // throw new Error(`In ${fS} no results returned for formname ${formName}`)
+      return false
+    }
+    results.beforeFirst(); // reset to beginning
+    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+      var resS = results.getString("ClauseKey")
+      resA.push(`'${resS}'`)
+    }
+  } catch (err) {
+    const probS = `In ${fS} ${err}`;
+    throw new Error(probS)
+  }
+  return resA
+}
 
 /**
  * Purpose: Get all the clauseKeys in this form
@@ -51,17 +82,17 @@ function testPrintTitlesAndIDs() {
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
  */
-function testGetClauseKeysThisForm() {
+function testGetCKThisForm() {
   var dbInst = new databaseC("applesmysql");
   var retS ="";
-  var ret = getClauseKeysThisForm(dbInst);
+  var ret = getCKThisForm(dbInst,"Create Document");
   var l = ret.length;
   for (var j = 0; j < l-1; j++){
     retS=retS+(ret[j]+", ")
 }
   retS = retS+ret[l-1];
   fieldS_G==retS ? console.log("fieldS_G equals retS"): console.log("fieldS_G not equal to retS");
-  console.log(`In testGetClauseKeysThisForm: ${retS}`)
+  console.log(`In testGetCKThisForm: ${retS}`)
 }
 
 function runTests() {
