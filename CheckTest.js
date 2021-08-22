@@ -1,12 +1,9 @@
-/*exported 
-testExamineForm,
-testPrintTitlesAndIDs, 
-testGetCKThisForm,runTests
+/*exported testExamineForm , testPrintTitlesAndIDs, testGetCKThisForm , runTests
  */
 
-/*global  userEmail , logStatusofData, evalProposal , 
-chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC ,formList ,
-UnitTestingApp*/
+/*global  userEmail , logStatusofData, evalProposal , getCKThisForm
+chkMajorPropDetailCategories,getCurrPropID_ , FormApp , databaseC , formList ,
+UnitTestingApp */
 
 
 
@@ -44,37 +41,7 @@ function testPrintTitlesAndIDs() {
   var retS = printTitlesAndIDS_(form.id);
   console.log(`In testPrintTitlesAndIDs: ${retS}`)
 }
-/**
- * Purpose: Get clauseKeys for global form
- *
- * @param  {String} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
- */
- function getCKThisForm(dbInst,formName) {
-  const fS = "getCKThisForm";
-  var resA = [];
-  try {
-    const locConn = dbInst.getconn(); // get connection from the instance 
-    const qryS = `SELECT ClauseKey FROM ck_question WHERE FormName='${formName}';`;
-    const stmt = locConn.prepareStatement(qryS);
-    const results = stmt.executeQuery(qryS);
 
-    if (!results.last()) {
-      // throw new Error(`In ${fS} no results returned for formname ${formName}`)
-      return false
-    }
-    results.beforeFirst(); // reset to beginning
-    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
-      var resS = results.getString("ClauseKey")
-      resA.push(`'${resS}'`)
-    }
-  } catch (err) {
-    const probS = `In ${fS} ${err}`;
-    throw new Error(probS)
-  }
-  return resA
-}
 
 /**
  * Purpose: Get all the clauseKeys in this form
