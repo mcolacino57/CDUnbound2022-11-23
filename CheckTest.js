@@ -1,17 +1,14 @@
-/*exported testCrFormResponseArray, 
+/*exported 
 testExamineForm,
 testPrintTitlesAndIDs, 
 testGetCKThisForm,runTests
  */
 
-/*global fieldS_G , crFormResponseArray, userEmail , logStatusofData, evalProposal , chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC ,formID_G ,
+/*global  userEmail , logStatusofData, evalProposal , 
+chkMajorPropDetailCategories,getCurrPropID_, FormApp , databaseC ,formList ,
 UnitTestingApp*/
 
-function testCrFormResponseArray() {
-  var f = FormApp.getActiveForm();
-  var resp = crFormResponseArray(f);
-  console.log(`In testCrFormResponseArray: ${resp}`)
-}
+
 
 // logs all of the titles of items in a form 
 function examineForm(form) {
@@ -26,7 +23,9 @@ function examineForm(form) {
 }
 
 function testExamineForm() {
-  var f = FormApp.openById(formID_G);
+  var form = formList.find(f => { if(f.short === "CD") return f})
+
+  var f = FormApp.openById(form.id);
   var ret = examineForm(f);
   return ret
 }
@@ -40,7 +39,9 @@ function printTitlesAndIDS_(formID) {
 }
 
 function testPrintTitlesAndIDs() {
-  var retS = printTitlesAndIDS_(formID_G);
+  var form = formList.find(f => { if(f.short === "CD") return f})
+
+  var retS = printTitlesAndIDS_(form.id);
   console.log(`In testPrintTitlesAndIDs: ${retS}`)
 }
 /**
@@ -91,14 +92,12 @@ function testGetCKThisForm() {
     retS=retS+(ret[j]+", ")
 }
   retS = retS+ret[l-1];
-  fieldS_G==retS ? console.log("fieldS_G equals retS"): console.log("fieldS_G not equal to retS");
+  // fieldS_G==retS ? console.log("fieldS_G equals retS"): console.log("fieldS_G not equal to retS");
   console.log(`In testGetCKThisForm: ${retS}`)
 }
 
 function runTests() {
   var dbInst = new databaseC("applesmysql");
-  //var form = FormApp.openById(formID_G);
-  //var dupePropS = "Tootco at 6 East 45"
   var userS = userEmail;
   var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();

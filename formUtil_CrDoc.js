@@ -1,18 +1,13 @@
 /*exported getItemResps,testDisplayTitlesAndIDs,testExamineForm ,
 runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,
-writeAllQuestionsKeys,emptyCk_Question,crFormResponseArray,
+writeAllQuestionsKeys,
 setOverviewDesc */
 /*global examineForm, Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
-cdFormID,cdDropdownID
+cdFormID,cdDropdownID,formList
 */
 // 210727 9:55
 
-/* CHANGE FOR EACH FORM */
-const formID_G = cdFormID;
-const formName_G = 'Create Document';
-const fieldS_G = ""; // Note that this code doesn't delete from ck_question and therefore no need for this
 
-/*Code_Section*/
 /***************Utility ***********************/
 /*
 * function returnItemNumber_(items, questionS)
@@ -58,12 +53,16 @@ function getItemResps(form) {
 
 
 function testDisplayTitlesAndIDs() {
-  var retS = displayTitlesAndIDS_(formID_G);
+  var form = formList.find(f => { if(f.short === 'CD') return f});
+
+  var retS = displayTitlesAndIDS_(form.id);
   console.log(`In testDisplayTitlesAndIDs ${retS}`)
 }
 
 function testExamineForm() {
-  var f = FormApp.openById(formID_G);
+  var form = formList.find(f => { if(f.short === 'OperatingExpenses') return f});
+
+  var f = FormApp.openById(form.id);
   var ret = examineForm(f);
   return ret
 }
@@ -136,21 +135,6 @@ function displayTitlesAndIDS_(formID) {
   }
 }
 
-function crFormResponseArray(form) {
-  // Use the global form ID and log the responses to each question.
-  var respA = [];
-  var formResponses = form.getResponses();
-  for (var i = 0; i < formResponses.length; i++) {
-    var formResponse = formResponses[i];
-    var itemResponses = formResponse.getItemResponses();
-    for (var j = 0; j < itemResponses.length; j++) {
-      var itemResponse = itemResponses[j];
-      respA.push({ "question": itemResponse.getItem().getTitle(), "answer": itemResponse.getResponse() });
-    }
-  }
-  return respA
-}
-
 
 /************************ FORM PREP ******************************************************* */
 /**
@@ -166,14 +150,15 @@ function writeAllQuestionsKeys() {
   var fS = 'writeAllQuestionsKeys';
   var dbInst = new databaseC("applesmysql");
   try {
-    var qcrA = crFormKeyArray(formID_G);  // this is specific to the particular for and needs changing in other formUtils
+    var form = formList.find(f => { if (f.short === 'CD') return f });
+    var qcrA = crFormKeyArray(form.id);  // this is specific to the particular for and needs changing in other formUtils
     if (qcrA) {
       qcrA.forEach(r => {
         var qcrRec = {
           'Question': r.question,
           'ClauseKey': r.clausekey,
           'ReplStruct': r.replacement,
-          'FormName'  : formName_G,
+          'FormName'  : form.name,
           'CreatedBy': userEmail,
           'CreatedWhen': todayS,
           'ModifiedWhen': nowS,
@@ -245,30 +230,6 @@ try {
   return "Problem"
 }
 return "Success"
-}
-
-/**
- * Purpose
- *
- * @param  {String} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
- */
-const logEmptyCk_Question = true;
-function emptyCk_Question(){
-  var fS = "emptyCk_Question";
-  var dbInst = new databaseC("applesmysql");
-  try {
-  var qryS = `Delete from ck_question where ClauseKey in (${fieldS_G});`;
-  var locConn = dbInst.getconn(); // get connection from the instance
-  var stmt = locConn.prepareStatement(qryS);
-  stmt.execute();
-} catch (e) {
-  logEmptyCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
-  return false
-}
-dbInst.closeconn();
-return true
 }
 
 

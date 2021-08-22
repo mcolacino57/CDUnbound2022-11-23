@@ -1,4 +1,4 @@
-/*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
+/*exported testIncPropName,runTests,testEvalResponses,
 testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
 testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
 testHandleBR,userEmail,logStatusofData*/
