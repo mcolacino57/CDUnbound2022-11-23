@@ -2,7 +2,7 @@
 runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,
 writeAllQuestionsKeys,
 setOverviewDesc */
-/*global examineForm, Logger,databaseC,FormApp,userEmail,todayS,nowS, getProposalNamesAndIDs, 
+/*global examineForm,databaseC,FormApp,userEmail , getProposalNamesAndIDs, 
 cdFormID,cdDropdownID,formList
 */
 
@@ -100,44 +100,7 @@ function displayTitlesAndIDS_(formID) {
 }
 
 
-/************************ FORM PREP ******************************************************* */
-/**
- * Purpose: Run this function to populate the ck_question table; this should be run
- * whenever a new question is added to the form; START HERE, and use emptyCk_Question if needed
- * to empty out the ck_question table
- *
- * @param  {String} param_name - param
- * @param  {itemReponse[]} param_name - an array of responses 
- * @return {String} retS - return value
- */
-function writeAllQuestionsKeys() {
-  var fS = 'writeAllQuestionsKeys';
-  var dbInst = new databaseC("applesmysql");
-  try {
-    var form = formList.find(f => { if (f.short === 'CD') return f });
-    var qcrA = crFormKeyArray(form.id);  // this is specific to the particular for and needs changing in other formUtils
-    if (qcrA) {
-      qcrA.forEach(r => {
-        var qcrRec = {
-          'Question': r.question,
-          'ClauseKey': r.clausekey,
-          'ReplStruct': r.replacement,
-          'FormName'  : form.name,
-          'CreatedBy': userEmail,
-          'CreatedWhen': todayS,
-          'ModifiedWhen': nowS,
-          'ModifiedBy': userEmail
-        }
-        var rets = writeCk_Question(dbInst, qcrRec);
-        if (rets==="Problem") {throw new Error(`In ${fS}: problem with ${qcrA.qustion}`)}
-      })
-    }
-  } catch (err) {
-    console.log(`In ${fS}: ${err}`);
-    return false
-  }
-  return true
-}
+
 
 /**
  * Purpose: Create array of objects with question, clausekey, replacement
@@ -148,6 +111,7 @@ function writeAllQuestionsKeys() {
 /* assumes description (getHelpText) for each question in the form: 
 key: <clausekey> / replacement: <replacement> */
 // small change to test commit
+// eslint-disable-next-line no-unused-vars
 function crFormKeyArray(formID) {
   var form = FormApp.openById(formID);
   var fS = "crFormKeyArray";
@@ -170,30 +134,6 @@ function crFormKeyArray(formID) {
   return qcrA
 }
 
-const logWriteCk_Question = true;
-function writeCk_Question(dbInst,qcrRec){
-  var fS = 'writeCk_Question';
-  // database structure; change when ck_question changes
-  var colS = "Question,ClauseKey,ReplStruct,FormName,CreatedBy,CreatedWhen,ModifiedWhen,LastModifiedBy";
-  var valA = Object.values(qcrRec);
-  var recordS = "";
-  for (var i = 0; i < valA.length; i++) {
-    if (i < (valA.length - 1)) {
-      recordS = recordS + "'" + valA[i] + "',";
-    } else {
-      recordS = recordS +  "'" + valA[i] + "'";
-    }
-  }
-try {
-  var qryS = `INSERT INTO ck_question (${colS}) VALUES(${recordS});`;
-  var locConn = dbInst.getconn(); // get connection from the instance
-  var stmt = locConn.prepareStatement(qryS);
-  stmt.execute();
-} catch (e) {
-  logWriteCk_Question ? Logger.log(`In ${fS}: ${e}`) : true;
-  return "Problem"
-}
-return "Success"
-}
+
 
 
