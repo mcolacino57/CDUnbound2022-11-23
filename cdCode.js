@@ -3,7 +3,7 @@ testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
 testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
 testHandleBR,userEmail,logStatusofData*/
 
-/*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
+/*global Utilities,Logger,BetterLog,databaseC, docC,proposalC,
  getCurrPropID_,readFromTable,DriveApp,readInListFromTable,maxRows*/
 // 210727 10:39
 

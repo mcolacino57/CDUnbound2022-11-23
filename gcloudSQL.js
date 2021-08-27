@@ -1,6 +1,6 @@
 /*global Logger,databaseC,userEmail*/
 /*exported getProposalNamesAndIDs,getSpaceDisplay,getProposalData,
-readInListFromTable,setProposalCurrent,testGetPropSize , writePropDetail*/
+readInListFromTable,setProposalCurrent,testGetPropSize */
 /****************Called from other gs files*************** */
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
@@ -357,41 +357,6 @@ function setProposalCurrent(dbInst, propID) {
  * @return {String} retS - return value
  */
 
-/*
-CREATE TABLE `prop_detail` (
-  `ProposalName` 		  VARCHAR(255) NOT NULL,
-  `ProposalClauseKey`	VARCHAR(255) NOT NULL,
-  `ProposalQuestion`	VARCHAR(255) NOT NULL,
-  `ProposalAnswer`	  VARCHAR(255) NOT NULL,
-  `CreatedBy` 		    VARCHAR(255) NOT NULL,
-  `CreatedWhen` 		  DATE NOT NULL,
-  `ModifiedBy` 		    VARCHAR(255) DEFAULT NULL,
-  `ModifiedWhen` 		  DATETIME DEFAULT NULL, 
-);
-*/
-const logWritePropDetail = false;
-// eslint-disable-next-line no-unused-vars
-function writePropDetail(dbInst, record) {
-  var fS = 'writePropDetail';
-  var colS = 'ProposalID, ProposalName,ProposalClauseKey,ProposalQuestion,ProposalAnswer,CreatedBy,CreatedWhen,ModifiedWhen,ModifiedBy';
-  var recordA = Object.values(record);
-  var recordS = "";
-  recordA.forEach((s) => { recordS = recordS + "'" + s + "'" + "," });
-  // leaves extra comma at end of recordS
-  var rx = /,$/;
-  recordS = recordS.replace(rx, ""); // get rid of comma
-  try {
-    var qryS = `INSERT INTO prop_detail (${colS}) VALUES(${recordS});`;
-    var locConn = dbInst.getconn(); // get connection from the instance
-    var stmt = locConn.prepareStatement(qryS);
-    stmt.execute();
-  } catch (err) {
-    var problemS = `In ${fS}: ${err}`;
-    logWritePropDetail ? console.log(problemS) : true;
-    return problemS
-  }
-  return "Success"
-}
 const logReadInListFromTable = false;
 /**
  * Purpose: Read in list of values for the table, using colS and inListS
