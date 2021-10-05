@@ -3,7 +3,7 @@
 
 /*global  userEmail , logStatusofData, evalProposal , getCKThisForm
 chkMajorPropDetailCategories,getCurrPropID_ , FormApp , databaseC , formList ,
-UnitTestingApp */
+UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC*/
 
 
 
@@ -51,7 +51,7 @@ function testPrintTitlesAndIDs() {
  * @return {String} retS - return value
  */
 function testGetCKThisForm() {
-  var dbInst = new databaseC("applesmysql");
+  var dbInst = new databaseC(databaseNameG);
   var retS ="";
   var ret = getCKThisForm(dbInst,"Create Document");
   var l = ret.length;
@@ -64,7 +64,7 @@ function testGetCKThisForm() {
 }
 
 function runTests() {
-  var dbInst = new databaseC("applesmysql");
+  var dbInst = new databaseC(databaseNameG);
   var userS = userEmail;
   var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();
@@ -77,4 +77,39 @@ function runTests() {
 
 
   }
+}
+
+// eslint-disable-next-line no-unused-vars
+function testHandleOver() {
+  var dbInst = new databaseC(databaseNameG);
+  var docInst = new docC(docID, foldID);
+  // eslint-disable-next-line no-undef
+  var ret = handleOver(dbInst, docInst);
+  docInst.saveAndCloseTemplate();
+  dbInst.closeconn()
+  return ret
+}
+
+
+// eslint-disable-next-line no-unused-vars
+function testHandleExpenses() {
+  var dbInst = new databaseC(databaseNameG);
+  var docInst = new docC(docID, foldID);
+  // eslint-disable-next-line no-undef
+  var ret = handleExpenses(dbInst, docInst);
+  // Logger.log(ret)
+  docInst.saveAndCloseTemplate();
+  dbInst.closeconn()
+  return ret
+}
+
+// eslint-disable-next-line no-unused-vars
+function testHandleBR() {
+    var dbInst = new databaseC(databaseNameG);
+    var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
+    var docInst = new docC(docID, foldID);
+    // eslint-disable-next-line no-undef
+    var ret = handleBaseRent(dbInst, docInst, propInst);
+    return ret
+  
 }

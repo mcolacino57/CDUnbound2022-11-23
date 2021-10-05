@@ -1,10 +1,11 @@
-/*exported testIncPropName,runTests,testEvalResponses,
-testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
-testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
-testHandleBR,userEmail,logStatusofData*/
+/*exported testIncPropName , runTests , testEvalResponses,
+testProposalNameYN,  onSubmit , testGetNamedProposalData, testQuestionToClauseKey ,
+testGetProposalData , testPrintTitlesAndIDs , todayS , nowS , 
+testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
+docID , foldID */
 
-/*global Utilities,Logger,BetterLog,databaseC, docC,proposalC,
- getCurrPropID_,readFromTable,DriveApp,readInListFromTable,maxRows*/
+/*global Utilities , Logger , BetterLog , databaseC , docC , proposalC,
+ getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows */
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -12,10 +13,12 @@ const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 // const userEmail = Session.getActiveUser().getEmail();
 const userEmail = "mcolacino@squarefoot.com";
+const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 
 const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate spreadsheet--general debug
-const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
+const databaseNameG = "applesmysql";
+
 
 /************** clauseKey strings object ***********************/
 /* UPDATE  these when form is modified especially when new questions/clauses/clauseKeys are added */
@@ -36,7 +39,6 @@ function onSubmit() {
   return ret
 }
 
-
 const logEvalProposal = false;
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
@@ -48,7 +50,7 @@ function evalProposal() {
   const logLoc = logEvalProposal;
   var ret, propID, propS;
   try {
-    var dbInst = new databaseC("applesmysql");
+    var dbInst = new databaseC(databaseNameG);
     var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
@@ -419,24 +421,7 @@ function handleOver(dbInst, docInst, propSize) {
 
 /*************************************Test ************************************ */
 
-function testHandleOver() {
-  var dbInst = new databaseC("applesmysql");
-  var docInst = new docC(docID, foldID);
-  var ret = handleOver(dbInst, docInst);
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return ret
-}
 
-function testHandleExpenses() {
-  var dbInst = new databaseC("applesmysql");
-  var docInst = new docC(docID, foldID);
-  var ret = handleExpenses(dbInst, docInst);
-  // Logger.log(ret)
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return ret
-}
 
 /**
  * Purpose: replace a chunk of text in the docInst, using replacement structure and replacement text
@@ -458,13 +443,7 @@ function updateTemplateBody(replStructure, replText, docInst) {
   return true
 }
 
-function testHandleBR() {
-  var dbInst = new databaseC("applesmysql");
-  var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
-  var docInst = new docC(docID, foldID);
-  var ret = handleBaseRent(dbInst, docInst, propInst);
-  return ret
-}
+
 
 const logChkMajorPropDetailCategories = false;
 /**
@@ -567,7 +546,6 @@ function sortDate(r1, r2) {
     return 1;
   return 0;
 }
-
 
 
 
