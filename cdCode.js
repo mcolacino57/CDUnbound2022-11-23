@@ -5,7 +5,8 @@ testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
 docID , foldID */
 
 /*global Utilities , Logger , BetterLog , databaseC , docC , proposalC,
- getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows */
+ getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows ,
+ getProposalNamesAndIDs , getCurrentProposal , HtmlService , saveAsJSON*/
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -39,18 +40,55 @@ function onSubmit() {
   return ret
 }
 
+/**
+ * Purpose: When using html forms, this function is called by 
+ * processForm with the form object from the html 
+ *
+ * @param  {object} htmlFormObject - from html form
+ * @return {boolean    var probS = `In onSubmit, propblem initializing`;
+ } t/f 
+ */
+ const disp_onHtmlSubmit = true;
+ // eslint-disable-next-line no-unused-vars
+ function onHtmlSubmit(htmlFormObject) {
+   var fS = "onHtmlSubmit";
+   var ret;
+   //var ck2, pid;
+   disp_onHtmlSubmit ? Logger.log(`The htmlFormObject is  ${JSON.stringify(htmlFormObject)}`) : true;
+   // Include this test in production but not in testing
+   try {
+     var dbInst = new databaseC(databaseNameG);
+    //  disp_testCrFormCKArray ? testCrFormCKArray("Tenant Improvements") : true; // returns true or throws error
+    //  ck2 = setFieldString("Tenant Improvements");
+    //  pid = getCurrPropID_(dbInst,userEmail)[0];
+    //  ret = emptyProp_Detail(pid, ck2); // clear out prop detail, returns t or f
+    //  if (ret) {
+    //    htmlFormObject = xfHtmlObj(htmlFormObject); // tranform htmlFormObject as needed for this form
+    //    if (!htmlFormObject) {
+    //      throw new Error(`problem in ${fS} with xfHtmlObj`);
+    //    }
+       ret = evalProposal(dbInst); // note that you don't really need the htmlformobject
+       return ret
+     
+   } catch (err) {
+     var probS = `In ${fS}, problem initializing`;
+     Logger.log(probS);
+   }
+   return false
+ }
+
 const logEvalProposal = false;
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
  *
  * @return {boolean} return - true or false
  */
-function evalProposal() {
+// eslint-disable-next-line no-unused-vars
+function evalProposal(dbInst) {
   const fS = "evalProposal";
   const logLoc = logEvalProposal;
   var ret, propID, propS;
   try {
-    var dbInst = new databaseC(databaseNameG);
     var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
@@ -300,12 +338,13 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
 // fixed to include propSize
 function handleExpenses(dbInst, docInst, propSize) {
   var fS = "handleExpenses";
+  var pdA = [];
   // all clauseKeys in expenses UPDATE if Operating Expenses form update
   var expInS = clauseKeyObjG.expenses
   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
   var repClauseS, ret, probS, elRepS, retRepS;
   try {
-    var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
+    pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
       if (!correctSize(propSize, pd.clausesize)) return;
 
@@ -547,6 +586,87 @@ function sortDate(r1, r2) {
   return 0;
 }
 
+/************************HTML *********************** */
+
+
+// eslint-disable-next-line no-unused-vars
+function doGet(request) {
+  const dbInst = new databaseC(databaseNameG);
+  // eslint-disable-next-line no-undef
+  var ddvaluesA = []; // values for proposal dd (dropdown)
+  var propA = [];
+  // gets a list that looks like [ [name, id],...] - propA
+  propA = getProposalNamesAndIDs(dbInst, userEmail);
+  Logger.log(`In doGet: ${propA}`);
+  for (var i in propA) {
+    ddvaluesA.push({ proposal: `${propA[i][0]}` }); // create dropdown array
+  }
+  var pN = getCurrentProposal(userEmail)[1];
+  Logger.log(`ddvalues: ${JSON.stringify(ddvaluesA)}`);
+  var html = HtmlService.createTemplateFromFile('indexCD');
+  html.proposals = JSON.stringify(ddvaluesA); // move to client side
+  html.currProposal = pN;
+  var htmlOutput = html.evaluate();
+  return htmlOutput
+}
+
+/* @Include JavaScript and CSS Files */
+// eslint-disable-next-line no-unused-vars
+function include(filename) {
+  return HtmlService.createHtmlOutputFromFile(filename)
+    .getContent();
+}
+
+/**
+ * Purpose: process html-derived formObject passed from client side
+ *
+ * @param  {objec} formObject - passed from html
+ * @return {boolean} ret - return value
+ */
+
+/* @Process Form */
+// eslint-disable-next-line no-unused-vars
+function processForm(formObject) {
+  // var formS = JSON.stringify(formObject);
+  // Logger.log(formS);
+  // console.log(formS);
+  var ret = saveAsJSON("processForm.json", formObject);
+  ret = onHtmlSubmit(formObject);
+  return ret;
+}
+
+/*************************** form utilities ***********************/
+// eslint-disable-next-line no-unused-vars
+function hideSpinner() {
+  console.log("attempting to hide spinner");
+
+  document.getElementById('spindiv')
+    .style.visibility = 'hidden';
+}
+// eslint-disable-next-line no-unused-vars
+function showSpinner() {
+  console.log("attempting to show spinner");
+
+  document.getElementById('spindiv')
+    .style.visibility = 'visible';
+}
+
+/**
+ * Purpose: take the htmlFormObject and "fix" it so that it works. Each form
+ * will have slightly different code, but for TI it consists of a stub
+ * 
+ *
+ * @param  {object} htmlFormObject - from processForm
+ * @return {String} retS - return value
+ */
+const log_xfHtmlObj = false;
+// eslint-disable-next-line no-unused-vars
+function xfHtmlObj(htmlFormObject) {
+  var fS = "xfHtmlObj";
+  
+  log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)}`) : true;
+  return htmlFormObject;
+}
 
 
 

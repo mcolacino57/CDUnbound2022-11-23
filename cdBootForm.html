@@ -1,0 +1,147 @@
+<script>
+  // Prevent forms from submitting naturally
+  function preventFormSubmit() {
+    var forms = document.querySelectorAll('form');
+    for (var i = 0; i < forms.length; i++) {
+      forms[i].addEventListener('submit', function (event) {
+        event.preventDefault();
+      });
+    }
+  }
+  window.addEventListener('load', preventFormSubmit);
+
+
+  /**
+   * Purpose: go to server side and process the form using processForm
+   * processForm cod is in poCode.js
+   *
+   * @param  {object} formObject 
+   * @return {boolean} ret - return value
+   */
+
+  function handleFormSubmit(formObject) {
+    var outcomeS;
+    showSpinner();
+
+    google.script.run.
+      withSuccessHandler(showSuccessModal).
+      withFailureHandler(showFailureModal).
+      processForm(formObject);
+    // processForm in tiCode
+    // clean up after form has been processed
+    // document.getElementById("tiForm").reset();
+    document.getElementById("subBtn").blur();
+    // if processForm didn't return clean, alert and return false
+  
+    // if processForm returns ok, check rent inclusion number value, 
+    // if empty or improper format, alert and return
+    return true
+  }
+
+  /**
+   * Purpose: these functions show modals
+   *
+   * @return {boolean} true - return value
+   */
+
+  function showSuccessModal() {
+    console.log("in showSuccessModal");
+    $("#modal-2").modal('show');
+    hideSpinner();
+
+    return true
+  }
+  function showFailureModal() {
+    $("modal-1").modal('show');
+    hideSpinner();
+    return true
+  }
+
+
+  var psel = document.getElementById("selectProposal");
+  psel.addEventListener('change', updatePropSelect);
+
+  function updatePropSelect() {
+    var fS = "updatePropSelect";
+    showSpinner();
+    try {
+      // get the selected proposal and set it to current
+      // via server call clientSetProposalCurrent
+      var psel = document.getElementById("selectProposal");
+      var newProposal = psel.options[psel.selectedIndex].value;
+      console.log(`in ${fS} new proposal is ${newProposal}`);
+      google.script.run.
+        withSuccessHandler(onCSP_Success).
+        withFailureHandler(onCSP_Failure).
+        clientSetProposalCurrent(newProposal);
+    } catch (err) {
+      console.log(`In ${fS}: ${err}`);
+      return false
+    }
+    return true
+  }
+  function onCSP_Success(prop_detailA) {
+    if (prop_detailA) {
+      console.log(`In onCSP_Success param is ${JSON.stringify(prop_detailA)}`);
+      var radiobtn, field;
+      document.getElementById("formCheck-1").checked=false;
+      document.getElementById("formCheck-2").checked=false;
+      document.getElementById("formCheck-3").checked=false;
+
+      for (var i in prop_detailA) {
+        // if (prop_detailA[i].ans === "") continue;
+        if (prop_detailA[i].ck === "tiAllow") {
+          document.getElementById("tiAllow").value = prop_detailA[i].ans;
+        }
+        if (prop_detailA[i].ck === "tiCompBid") {
+          radiobtn = document.getElementById("formCheck-1");
+          radiobtn.checked = true;
+        }
+        if (prop_detailA[i].ck === "tiFreight") {
+          radiobtn = document.getElementById("formCheck-2");
+          radiobtn.checked = true;
+        }
+        if (prop_detailA[i].ck === "tiAccess") {
+          radiobtn = document.getElementById("formCheck-3");
+          radiobtn.checked = true;
+        }
+      }
+    } else {
+      var idx = document.getElementById("selectProposal").selectedIndex;
+      // resetting form sets selectedIndex to 0; so store it
+      document.getElementById("tiForm").reset();
+      // restore prior value
+      psel.selectedIndex = idx;
+
+    }
+    hideSpinner();
+  }
+  function onCSP_Failure(prop_detailA) {
+    $("modal-1").modal('show');
+    console.log(`In onCSP_Failure param is ${JSON.stringify(prop_detailA)}`);
+  }
+
+  /*************************** form utilities ***********************/
+  function hideSpinner() {
+    console.log("attempting to hide spinner");
+
+    document.getElementById('spindiv')
+      .style.visibility = 'hidden';
+  }
+  function showSpinner() {
+    console.log("attempting to show spinner");
+
+    document.getElementById('spindiv')
+      .style.visibility = 'visible';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bss-tooltip]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    })
+  }, false);
+
+
+</script>
