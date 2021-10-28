@@ -37,7 +37,19 @@
             <div class="container border rounded d-grid hero" style="height: 500px;padding-left: 0px;margin-top: 30px;width: 720px;border-color: var(--bs-gray-300);border-top-style: solid;border-right-style: solid;border-bottom-style: solid;border-left-style: solid;margin-right: 100px;margin-left: 100px;">
                 <div class="row" style="width: 720px;margin-right: 0px;margin-left: 0px;height: 40px;margin-bottom: 10px;">
                     <div class="col-lg-9" style="padding: 20px;font-size: 24px;height: 40px;padding-left: 25px;width: 320px;padding-top: 10px;padding-bottom: 10px;"><strong style="font-family: Montserrat, sans-serif;font-size: 22px;">Readiness Report</strong></div>
-                </div><textarea class="form-control" style="height: 400px;width: 520px;margin-left: 100px;"></textarea>
+                </div>
+                <div class="table-responsive" style="height: 400px;">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Answer</th>
+                                <th>Section</th>
+                            </tr>
+                        </thead>
+                        <tbody id="readyTable"></tbody>
+                    </table>
+                </div>
             </div>
             <div class="container-lg" style="margin-top: 30px;margin-left: 100px;padding-left: 0px;padding-right: 0px;height: 40px;width: 720px;margin-right: 100px;margin-bottom: 0px;padding-bottom: 20px;"><button class="btn btn-secondary btn-lg text-center text-sm-center text-md-center text-lg-center text-xl-center text-xxl-center" id="subBtn" type="submit" style="width: 200px;background: var(--bs-gray-200);font-family: Montserrat, sans-serif;color: var(--bs-gray-900);font-weight: bold;padding-left: 0px;">Submit</button>
                 <div class="modal fade" role="dialog" tabindex="-1" id="modal-1">

@@ -64,7 +64,7 @@
     // console.log(`The list of ids is: ${idList}`);
     console.log(`in ${fS}: proposalNameS is ${currentProposalNameS}`);
     google.script.run.
-      withSuccessHandler(onGCOSuccess).
+      withSuccessHandler(createTable).
       withFailureHandler(onCPDFailure).
       clientGetCDData(currentProposalNameS); // change for each form ; gcloudSQL
   }
@@ -83,33 +83,66 @@
    * prop_detailA comes in the form:
    * { 'ans': ans, 'quest': quest, "sect": sect };
    */
+  var propA_global = [];
   function onGCOSuccess(prop_detailA) { // change for each form
     var field, fS = "onCGOSuccess";
     var readyS = "", readyTextArea; // add strings together and put in text area
     try {
       const textAreaID = document.getElementById("cdTextArea");
       for (var i in prop_detailA) {
-        readyS += prop_detailA[i].quest + " " + prop_detailA[i].ans + " " + prop_detailA[i].sect + "\n";
+        readyS += prop_detailA[i].quest + "\t " + prop_detailA[i].ans + "\t (" + prop_detailA[i].sect + ")\n";
       } // end for
-      textAreaID.value = readyS;
+      propA_Global = prop_detailA;      
     } catch (err) {
       const probS = `In ${fS}: err is ${err}`;
       console.log(probS);
       throw new Error(probS);
     }
     return true
-
   }
 
   function onCPDFailure(param) {
     console.log(`in onCPDFailure: clientGetCDData failed with: ${param}`)
     return false
   }
+  
 
   document.addEventListener('DOMContentLoaded', function () {
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bss-tooltip]'));
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
-    })
+    });
+    // var currentProposalNameS = document.getElementById("currProposal").innerText;
+    // google.script.run.
+    //   withSuccessHandler(createTable).
+    //   withFailureHandler(onCPDFailure).
+    //   clientGetCDData(currentProposalNameS); 
   }, false);
+
+  function createTable(propA) {
+    // returns [{ 'ans': ProposalAnswer, 'quest': ProposalQuestion, 'sect': section },..]
+    var row,c1,c2,c3,tab;
+    tab = document.getElementById("readyTable");
+    propA.forEach((pdetail)=>{
+      console.log(pdetail);
+      row = document.createElement("tr");
+      c1 = document.createElement("td");
+      c1.textContent = pdetail.quest;
+      c2 = document.createElement("td");
+      c2.textContent = pdetail.ans;
+      c3 = document.createElement("td");
+      c3.textContent = pdetail.sect;
+      row.appendChild(c1);
+      row.appendChild(c2);
+      row.appendChild(c3);
+      tab.appendChild(row);
+
+      
+    });
+
+  }
+
+  
+
+  
 </script>

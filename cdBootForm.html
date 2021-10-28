@@ -80,42 +80,24 @@
     }
     return true
   }
+
   function onCSP_Success(prop_detailA) {
-    if (prop_detailA) {
-      console.log(`In onCSP_Success param is ${JSON.stringify(prop_detailA)}`);
-      var radiobtn, field;
-      document.getElementById("formCheck-1").checked=false;
-      document.getElementById("formCheck-2").checked=false;
-      document.getElementById("formCheck-3").checked=false;
-
+    var field, fS = "onCSP_Success";
+    var readyS = "", readyTextArea; // add strings together and put in text area
+    try {
+      const textAreaID = document.getElementById("cdTextArea");
       for (var i in prop_detailA) {
-        // if (prop_detailA[i].ans === "") continue;
-        if (prop_detailA[i].ck === "tiAllow") {
-          document.getElementById("tiAllow").value = prop_detailA[i].ans;
-        }
-        if (prop_detailA[i].ck === "tiCompBid") {
-          radiobtn = document.getElementById("formCheck-1");
-          radiobtn.checked = true;
-        }
-        if (prop_detailA[i].ck === "tiFreight") {
-          radiobtn = document.getElementById("formCheck-2");
-          radiobtn.checked = true;
-        }
-        if (prop_detailA[i].ck === "tiAccess") {
-          radiobtn = document.getElementById("formCheck-3");
-          radiobtn.checked = true;
-        }
-      }
-    } else {
-      var idx = document.getElementById("selectProposal").selectedIndex;
-      // resetting form sets selectedIndex to 0; so store it
-      document.getElementById("tiForm").reset();
-      // restore prior value
-      psel.selectedIndex = idx;
-
+        readyS += prop_detailA[i].quest + "\t " + prop_detailA[i].ans + "\t (" + prop_detailA[i].sect + ")\n";
+      } // end for
+      textAreaID.value = readyS;
+    } catch (err) {
+      const probS = `In ${fS}: err is ${err}`;
+      console.log(probS);
+      throw new Error(probS);
     }
     hideSpinner();
   }
+  
   function onCSP_Failure(prop_detailA) {
     $("modal-1").modal('show');
     console.log(`In onCSP_Failure param is ${JSON.stringify(prop_detailA)}`);

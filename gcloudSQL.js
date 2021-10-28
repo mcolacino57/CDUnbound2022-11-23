@@ -523,10 +523,10 @@ function clientSetProposalCurrent(pnS) {
   try {
     dbInst = new databaseC(databaseNameG);
     propInst = new proposalC(dbInst, pnS);
-    var pid = propInst.getID();
+    // var pid = propInst.getID();
     var ret = setProposalCurrent(dbInst, propInst);
     if (!ret) throw new Error(`problem in setProposalCurrent for ${pnS}`);
-    var overDA = getTIData(dbInst, pid);
+    var overDA = clientGetCDData(pnS);
     if (!ret) throw new Error(`problem in getTIData for ${pnS}`);
 
 
@@ -895,6 +895,53 @@ function getTIData(dbInst, proposalID) {
   }
   return resA
 }
+
+/**
+ * Purpose: client side calls to get alloverview information f
+ * or a given proposal ID
+ * by querying _prop_detail_ based on the id and sub query of ck_question
+ *
+ * @param  {object} dbInst - instance of databaseC
+ * @param  {string} proposalID - an array of responses 
+ * @return {object[]} resA - return array of objects
+ * Format of returned array of objects: [{ 'ck': ckS, 'ans': ansS },..]
+ * clausekeys and answers
+ */
+const disp_clientGetTIData = false;
+// eslint-disable-next-line no-unused-vars
+function clientGetTIData(proposalNameS) {
+  var fS = "clientGetTIData";
+  disp_clientGetTIData ? Logger.log(`In ${fS} proposalNameS is ${proposalNameS}`) : true;
+  var resA = [];
+  try {
+    const dbInst = new databaseC(databaseNameG);
+    // extract id from name
+    var propInst = new proposalC(dbInst, proposalNameS);
+    var proposalID = propInst.getID();
+    
+    const locConn = dbInst.getconn(); // get connection from the instance 
+    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_question WHERE FormName = "Tenant Improvements");`;
+    const stmt = locConn.prepareStatement(qryS);
+    const results = stmt.executeQuery(qryS);
+    Logger.log(`in ${fS}: qry is ${qryS}`);
+    results.beforeFirst(); // reset to beginning
+    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+      var ansS = results.getString("ProposalAnswer");
+      var ckS = results.getString("ProposalClauseKey")
+      var retObj = { 'ck': ckS, 'ans': ansS };
+      resA.push(retObj);
+    }
+  }
+  catch (err) {
+    var probS = `In ${fS} error ${err}`;
+    Logger.log(probS);
+    throw new Error(probS)
+  }
+  var stringR = JSON.stringify(resA);
+  disp_clientGetTIData ?Logger.log(`In ${fS} resA: ${stringR}`) : true;
+  return resA
+}
+
 /**
  * Purpose: Get the size of the current proposal
  *
@@ -920,53 +967,6 @@ function getPropSize(dbInst, propID, userS) {
   }
   return value
 }
-
-/**
- * Purpose: client side calls to get alloverview information f
- * or a given proposal ID
- * by querying _prop_detail_ based on the id and sub query of ck_question
- *
- * @param  {object} dbInst - instance of databaseC
- * @param  {string} proposalID - an array of responses 
- * @return {object[]} resA - return array of objects
- * Format of returned array of objects: [{ 'ck': ckS, 'ans': ansS },..]
- * clausekeys and answers
- */
- const disp_clientGetTIData = false;
- // eslint-disable-next-line no-unused-vars
- function clientGetTIData(proposalNameS) {
-   var fS = "clientGetTIData";
-   disp_clientGetTIData ? Logger.log(`In ${fS} proposalNameS is ${proposalNameS}`) : true;
-   var resA = [];
-   try {
-     const dbInst = new databaseC(databaseNameG);
-     // extract id from name
-     var propInst = new proposalC(dbInst, proposalNameS);
-     var proposalID = propInst.getID();
- 
-     const locConn = dbInst.getconn(); // get connection from the instance 
-     const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_question WHERE FormName = "Tenant Improvements");`;
-     const stmt = locConn.prepareStatement(qryS);
-     const results = stmt.executeQuery(qryS);
-     Logger.log(`in ${fS}: qry is ${qryS}`);
-     results.beforeFirst(); // reset to beginning
-     while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
-       var ansS = results.getString("ProposalAnswer");
-       var ckS = results.getString("ProposalClauseKey")
-       var retObj = { 'ck': ckS, 'ans': ansS };
-       resA.push(retObj);
-     }
-   }
-   catch (err) {
-     var probS = `In ${fS} error ${err}`;
-     Logger.log(probS);
-     throw new Error(probS)
-   }
-   var stringR = JSON.stringify(resA);
-   disp_clientGetTIData ?Logger.log(`In ${fS} resA: ${stringR}`) : true;
-   return resA
- }
-
  /**
  * Purpose: client side calls to get readiness information f
  * or a given proposal ID

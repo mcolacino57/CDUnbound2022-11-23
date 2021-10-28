@@ -16,7 +16,7 @@ const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 const userEmail = "mcolacino@squarefoot.com";
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
 
-const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate spreadsheet--general debug
+// const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate spreadsheet--general debug
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
 const databaseNameG = "applesmysql";
 
@@ -33,7 +33,7 @@ const clauseKeyObjG = {
 
 
 // eslint-disable-next-line no-global-assign
-Logger = BetterLog.useSpreadsheet(ssLogID);
+// Logger = BetterLog.useSpreadsheet(ssLogID);
 
 function onSubmit() {
   var ret = evalProposal();
