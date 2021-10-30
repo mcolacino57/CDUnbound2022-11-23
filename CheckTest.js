@@ -3,7 +3,8 @@
 
 /*global  userEmail , logStatusofData, evalProposal , getCKThisForm
 chkMajorPropDetailCategories,getCurrPropID_ , FormApp , databaseC , formList ,
-UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC*/
+UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC , 
+onHtmlSubmit */
 
 
 
@@ -88,6 +89,12 @@ function testHandleOver() {
   docInst.saveAndCloseTemplate();
   dbInst.closeconn()
   return ret
+}
+
+// eslint-disable-next-line no-unused-vars
+function testOnHtmlSubmit() {
+  // eslint-disable-next-line no-unused-vars
+  var ret = onHtmlSubmit({});
 }
 
 

@@ -4,7 +4,7 @@ testGetProposalData , testPrintTitlesAndIDs , todayS , nowS ,
 testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
 docID , foldID */
 
-/*global Utilities , Logger , BetterLog , databaseC , docC , proposalC,
+/*global Utilities , Logger  , databaseC , docC , proposalC,
  getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows ,
  getProposalNamesAndIDs , getCurrentProposal , HtmlService , saveAsJSON*/
 // 210727 10:39
@@ -35,10 +35,6 @@ const clauseKeyObjG = {
 // eslint-disable-next-line no-global-assign
 // Logger = BetterLog.useSpreadsheet(ssLogID);
 
-function onSubmit() {
-  var ret = evalProposal();
-  return ret
-}
 
 /**
  * Purpose: When using html forms, this function is called by 
@@ -50,7 +46,7 @@ function onSubmit() {
  */
  const disp_onHtmlSubmit = true;
  // eslint-disable-next-line no-unused-vars
- function onHtmlSubmit(htmlFormObject) {
+function onHtmlSubmit(htmlFormObject = {'val':"unneeded"}) {
    var fS = "onHtmlSubmit";
    var ret;
    //var ck2, pid;
@@ -340,10 +336,16 @@ function handleExpenses(dbInst, docInst, propSize) {
   var fS = "handleExpenses";
   var pdA = [];
   // all clauseKeys in expenses UPDATE if Operating Expenses form update
+  // when working change this to extract from ck database
   var expInS = clauseKeyObjG.expenses
-  // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')";
+  // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
   var repClauseS, ret, probS, elRepS, retRepS;
   try {
+    // could change query that generates prop_detail_ex to only
+    // include current proposal, or get the current proposal here
+    // and filter out, or write a query here directly which has the dis-
+    // advantage of not excapsulating db calls within gcloudSQL
+
     pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
     pdA.forEach((pd) => {
       if (!correctSize(propSize, pd.clausesize)) return;
@@ -356,7 +358,7 @@ function handleExpenses(dbInst, docInst, propSize) {
         }
       }
       if (pd.section === "Electric") {
-        if (pd.proposalclausekey === "elecRentIncCharge") {
+        if (pd.proposalclausekey === "elecRentInc") {
           elRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
         } else {
           elRepS = pd.clausebody;

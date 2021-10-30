@@ -63,6 +63,8 @@
 
     // console.log(`The list of ids is: ${idList}`);
     console.log(`in ${fS}: proposalNameS is ${currentProposalNameS}`);
+    // check the cache; if not there run the google script; if there
+    
     google.script.run.
       withSuccessHandler(createTable).
       withFailureHandler(onCPDFailure).
