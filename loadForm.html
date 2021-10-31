@@ -2,6 +2,7 @@
   window.addEventListener("load", function () {
     // get current proposal name string
     console.log('just before get currProposal')
+    showSpinner();
     try {
       var currentProposalNameS = document.getElementById("currProposal").innerText;
     } catch (err) { throw new Error(`can't find currProposal: ${err}`) }
@@ -14,7 +15,7 @@
     if (!ret) throw new Error(`problem with loadSelectProposal for ${currentProposalNameS}`)
     // any data for this proposal? 
     ret = chkPropDetail(currentProposalNameS);
-    hideSpinner();
+    
   });
 
   /**
@@ -28,7 +29,6 @@
 
   function loadSelectProposal(proposalsA, currentProposalNameS) {
     try {
-
       // get the dropdown
       const sel = document.getElementById("selectProposal");
       // iterate through proposalsA, getting each proposal name from the
@@ -60,11 +60,7 @@
 
   function chkPropDetail(currentProposalNameS) {
     const fS = "chkPropDetail";
-
-    // console.log(`The list of ids is: ${idList}`);
-    console.log(`in ${fS}: proposalNameS is ${currentProposalNameS}`);
-    // check the cache; if not there run the google script; if there
-    
+    console.log(`in ${fS}: proposalNameS is ${currentProposalNameS}`); 
     google.script.run.
       withSuccessHandler(createTable).
       withFailureHandler(onCPDFailure).
@@ -73,34 +69,37 @@
 
   /*
    *    Purpose: This success function takes an array of values from 
-   *    clientGetTIData
-   *    called below by google.run.script and updates the form fields
+   *    clientGetCDData
+   *    called  by google.run.script and updates the table
    *    with the values from the prop_detail table
-   *    This function is mirrored by onCSP_Success in oeBootForm, which does on
+   *    This function is mirrored by onCSP_Success in cdeBootForm, which does on
    *    change what dis does on load
    *
-   * @param  {object[]} prop_detailA - array of prop detail records
-   * @param  {string[]} idList - an array of ids 
+   * @param  {object[]} propA - array of prop detail records
    * @return {boolean} t/f - return value
-   * prop_detailA comes in the form:
+   * propA comes in the form:
    * { 'ans': ans, 'quest': quest, "sect": sect };
    */
-  var propA_global = [];
-  function onGCOSuccess(prop_detailA) { // change for each form
-    var field, fS = "onCGOSuccess";
-    var readyS = "", readyTextArea; // add strings together and put in text area
-    try {
-      const textAreaID = document.getElementById("cdTextArea");
-      for (var i in prop_detailA) {
-        readyS += prop_detailA[i].quest + "\t " + prop_detailA[i].ans + "\t (" + prop_detailA[i].sect + ")\n";
-      } // end for
-      propA_Global = prop_detailA;      
-    } catch (err) {
-      const probS = `In ${fS}: err is ${err}`;
-      console.log(probS);
-      throw new Error(probS);
-    }
-    return true
+   function createTable(propA) {
+    // returns [{ 'ans': ProposalAnswer, 'quest': ProposalQuestion, 'sect': section },..]
+    var row,c1,c2,c3,tab;
+    tab = document.getElementById("readyTable");
+    tab.innerHTML = "";
+    propA.forEach((pdetail)=>{
+      console.log(pdetail);
+      row = document.createElement("tr");
+      c1 = document.createElement("td");
+      c1.textContent = pdetail.quest;
+      c2 = document.createElement("td");
+      c2.textContent = pdetail.ans;
+      c3 = document.createElement("td");
+      c3.textContent = pdetail.sect;
+      row.appendChild(c1);
+      row.appendChild(c2);
+      row.appendChild(c3);
+      tab.appendChild(row); 
+    });
+    hideSpinner();
   }
 
   function onCPDFailure(param) {
@@ -121,30 +120,6 @@
     //   clientGetCDData(currentProposalNameS); 
   }, false);
 
-  function createTable(propA) {
-    // returns [{ 'ans': ProposalAnswer, 'quest': ProposalQuestion, 'sect': section },..]
-    var row,c1,c2,c3,tab;
-    tab = document.getElementById("readyTable");
-    propA.forEach((pdetail)=>{
-      console.log(pdetail);
-      row = document.createElement("tr");
-      c1 = document.createElement("td");
-      c1.textContent = pdetail.quest;
-      c2 = document.createElement("td");
-      c2.textContent = pdetail.ans;
-      c3 = document.createElement("td");
-      c3.textContent = pdetail.sect;
-      row.appendChild(c1);
-      row.appendChild(c2);
-      row.appendChild(c3);
-      tab.appendChild(row);
-
-      
-    });
-
-  }
-
   
-
   
 </script>

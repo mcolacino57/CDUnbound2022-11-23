@@ -513,7 +513,6 @@ function setProposalCurrent(dbInst, propInst) {
  * @return {boolean} f or ID of the proposal - or throws error
  */
 
-
 // eslint-disable-next-line no-unused-vars
 function clientSetProposalCurrent(pnS) {
   var fS = "clientSetProposalCurrent";
@@ -527,7 +526,7 @@ function clientSetProposalCurrent(pnS) {
     var ret = setProposalCurrent(dbInst, propInst);
     if (!ret) throw new Error(`problem in setProposalCurrent for ${pnS}`);
     var overDA = clientGetCDData(pnS);
-    if (!ret) throw new Error(`problem in getTIData for ${pnS}`);
+    if (!ret) throw new Error(`problem in clientGetCDData for ${pnS}`);
 
 
   } catch (err) {

@@ -48,7 +48,6 @@
     console.log("in showSuccessModal");
     $("#modal-2").modal('show');
     hideSpinner();
-
     return true
   }
   function showFailureModal() {
@@ -56,7 +55,6 @@
     hideSpinner();
     return true
   }
-
 
   var psel = document.getElementById("selectProposal");
   psel.addEventListener('change', updatePropSelect);
@@ -71,9 +69,11 @@
       var newProposal = psel.options[psel.selectedIndex].value;
       console.log(`in ${fS} new proposal is ${newProposal}`);
       google.script.run.
-        withSuccessHandler(onCSP_Success).
+        withSuccessHandler(createTable).
         withFailureHandler(onCSP_Failure).
         clientSetProposalCurrent(newProposal);
+        // createTable is in loadForm.html
+        // clientSetProposalCurrent is in gcloudSQL
     } catch (err) {
       console.log(`In ${fS}: ${err}`);
       return false
@@ -81,26 +81,11 @@
     return true
   }
 
-  function onCSP_Success(prop_detailA) {
-    var field, fS = "onCSP_Success";
-    var readyS = "", readyTextArea; // add strings together and put in text area
-    try {
-      const textAreaID = document.getElementById("cdTextArea");
-      for (var i in prop_detailA) {
-        readyS += prop_detailA[i].quest + "\t " + prop_detailA[i].ans + "\t (" + prop_detailA[i].sect + ")\n";
-      } // end for
-      textAreaID.value = readyS;
-    } catch (err) {
-      const probS = `In ${fS}: err is ${err}`;
-      console.log(probS);
-      throw new Error(probS);
-    }
-    hideSpinner();
-  }
   
-  function onCSP_Failure(prop_detailA) {
+  
+  function onCSP_Failure(propA) {
     $("modal-1").modal('show');
-    console.log(`In onCSP_Failure param is ${JSON.stringify(prop_detailA)}`);
+    console.log(`In onCSP_Failure param is ${JSON.stringify(propA)}`);
   }
 
   /*************************** form utilities ***********************/
