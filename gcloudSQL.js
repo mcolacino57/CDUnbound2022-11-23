@@ -31,17 +31,17 @@ function testclientSetProposalCurrent() {
 // Modified 210714 to include json y/n
 const logReadFromTable = false;
 const maxRows = 1000;
-function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
+function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn=true) {
   var fS = "readFromTable";
   var logLoc = logReadFromTable;
   /*********connect to database ************************************ */
   try {
     var locConn = dbInst.getconn(); // get connection from the instance
-    logLoc ? console.log(locConn.toString()) : true;
+    logLoc ? console.log(`In ${fS} ${locConn.toString()}`) : true;
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
   } catch (err) {
-    console.log(`In ${fS} issue getting connection or creating statement: ${err}`);
+    Logger.log(`In ${fS} issue getting connection or creating statement: ${err}`);
     return false
   }
   /******************extract rows that meet select criteria ********* */
@@ -50,7 +50,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
   } catch (err) {
-    console.log(`In ${fS} problem with executing ${colS} = ${searchS} query : ${err}`);
+    Logger.log(`In ${fS} problem with executing ${colS} = ${searchS} query : ${err}`);
     return false
   }
   var dataA = [];
@@ -62,19 +62,19 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
     dataA.push(recA); // push inner array into outside array
   }
   // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
-  logLoc ? console.log(dataA) : true;
+  logLoc ? console.log(`In ${fS} ${dataA}`) : true;
 
   /**************************now get the header names ************************** */
   try {
     var colA = dbInst.getcolumns(tableNameS);
   } catch (err) {
     var problemS = `In ${fS} problem with executing query : ${err}`
-    console.log(problemS);
+    Logger.log(problemS);
     return problemS
   }
 
   var rowA = splitRangesToObjects(colA, dataA); // utility function in objUtil.gs
-  logLoc ? console.log(rowA) : true;
+  logLoc ? console.log(`In ${fS} ${rowA}`) : true;
 
   results.close();
   stmt.close();
@@ -180,18 +180,18 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
  */
 
 const logReadAllFromTable = false;
-function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
+function readAllFromTable(dbInst, tableNameS,jsonyn=true) {
   var fS = "readAllFromTable";
   var logLoc = logReadAllFromTable;
   /*********connect to database ************************************ */
   try {
     var locConn = dbInst.getconn(); // get connection from the instance
-    logLoc ? console.log(locConn.toString()) : true;
+    logLoc ? console.log(`In ${fS} ${locConn.toString()}`) : true;
 
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
   } catch (err) {
-    console.log(`In ${fS} issue getting connection or creating statement: ${err}`);
+    Logger.log(`In ${fS} issue getting connection or creating statement: ${err}`);
     return false
   }
   /******************extract rows that meet select criteria ********* */
@@ -200,8 +200,8 @@ function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
   } catch (err) {
-    console.log(`In ${fS} problem with executing query : ${err}`);
-    return -1
+    Logger.log(`In ${fS} problem with executing query : ${err}`);
+    return false
   }
   var dataA = [];
   while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
@@ -211,18 +211,18 @@ function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
     }
     dataA.push(recA); // push inner array into outside array
   }
-  logLoc ? console.log(dataA) : true;
+  logLoc ? console.log(`In ${fS} ${dataA}`) : true;
 
   /**************************now get the header names ************************** */
   try {
     var colA = dbInst.getcolumns(tableNameS);
   } catch (err) {
     var problemS = `In ${fS} problem with executing query : ${err}`
-    console.log(problemS);
+    Logger.log(problemS);
     return problemS
   }
   var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
-  logLoc ? console.log(rowA) : true;
+  logLoc ? console.log(`In ${fS} ${rowA}`) : true;
   results.close();
   stmt.close();
   var retA = [];
@@ -258,7 +258,7 @@ function getProposalNamesAndIDs(dbInst, userS = userEmail) {
     ret = readFromTable(dbInst, tableNameS, colNameS, searchS, jsonyn);
     if (!ret) throw new Error(`problem reading from table ${tableNameS}`);
   var propNameIDA = ret.map(function (record) {
-      return [record.proposalname, record.proposalid];
+    return [record.proposalname, record.proposalid]
     });
   } catch (err) {
     var probS = `In ${fS} error ${err}`;
@@ -451,8 +451,8 @@ function matchingBRProposalID(dbInst, propID) {
     var locConn = dbInst.getconn(); // get connection from the instance
     var stmt = locConn.createStatement();
   } catch (err) {
-    console.log(`In ${fS} problem with connecting: ${err}`);
-    return -1
+    Logger.log(`In ${fS} problem with connecting: ${err}`);
+    return false
   }
   try {
     var rs = stmt.executeQuery(`SELECT COUNT(*) FROM base_rent where ProposalID = '${propID}';`);
@@ -461,7 +461,7 @@ function matchingBRProposalID(dbInst, propID) {
     if (rowCount == 0) { return false }
   } catch (err) {
     var errS = `In ${fS} problem with executing ProposalID = ${propID} query : ${err}`
-    console.log(errS);
+    Logger.log(errS);
     throw new Error(errS);  // pass up to calling function
   }
   return true
@@ -483,6 +483,7 @@ SET
 [WHERE
     condition];*/
 
+// eslint-disable-next-line no-unused-vars
 const logSetProposalCurrent = false;
 function setProposalCurrent(dbInst, propInst) {
   var fS = "setProposalCurrent";
@@ -499,7 +500,7 @@ function setProposalCurrent(dbInst, propInst) {
     stmt = locConn.prepareStatement(qryS2);
     stmt.execute();
   } catch (err) {
-    logSetProposalCurrent ? Logger.log(`In ${fS}: ${err}`) : true;
+    Logger.log(`in ${fS} qryS1 is ${qryS1} qryS2 is ${qryS2}`);
     return "Problem"
   }
   return "Success"
