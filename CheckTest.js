@@ -2,45 +2,24 @@
  */
 
 /*global  userEmail , logStatusofData, evalProposal , getCKThisForm
-chkMajorPropDetailCategories,getCurrPropID_ , FormApp , databaseC , formList ,
-UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC , 
+chkMajorPropDetailCategories,getCurrPropID_  , databaseC , 
+UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC , handleTenAndPrem ,
 onHtmlSubmit */
 
-
-
-// logs all of the titles of items in a form 
-function examineForm(form) {
-  var fitems = form.getItems();
-  for (var j = 0; j < fitems.length; j++) {
-    var title = fitems[j].getTitle()
-    var id = fitems[j].getId();
-    var itemTypeIs = fitems[j].getType();
-    var typeS = itemTypeIs.toString();
-    console.log(`Item title for: #${j} - ${title} ID: ${id} - type ${typeS}`);
-  }
+// eslint-disable-next-line no-unused-vars
+function testEvalProposal() {
+  const dbInst = new databaseC(databaseNameG);
+  var ret = evalProposal(dbInst);
+  console.log(ret);
 }
 
-function testExamineForm() {
-  var form = formList.find(f => { if(f.short === "CD") return f})
 
-  var f = FormApp.openById(form.id);
-  var ret = examineForm(f);
-  return ret
-}
-
-function printTitlesAndIDS_(formID) {
-  var form = FormApp.openById(formID);
-  var items = form.getItems();
-  for (var i in items) {
-    console.log(items[i].getTitle() + ': ' + items[i].getId() + " / " + items[i].getHelpText());  // HelpText == Description
-  }
-}
-
-function testPrintTitlesAndIDs() {
-  var form = formList.find(f => { if(f.short === "CD") return f})
-
-  var retS = printTitlesAndIDS_(form.id);
-  console.log(`In testPrintTitlesAndIDs: ${retS}`)
+// eslint-disable-next-line no-unused-vars
+function testHandleTenAndPrem() {
+  const dbInst = new databaseC(databaseNameG);
+  const docInst = new docC(docID, foldID);
+  var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
+  console.log(ret);
 }
 
 
@@ -75,7 +54,6 @@ function runTests() {
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
     test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
     test.assert(evalProposal(),`evalProposal -> propID ${propID}`)
-
 
   }
 }

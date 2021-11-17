@@ -44,34 +44,25 @@ const clauseKeyObjG = {
  * @return {boolean    var probS = `In onSubmit, propblem initializing`;
  } t/f 
  */
- const disp_onHtmlSubmit = true;
- // eslint-disable-next-line no-unused-vars
-function onHtmlSubmit(htmlFormObject = {'val':"unneeded"}) {
-   var fS = "onHtmlSubmit";
-   var ret;
-   //var ck2, pid;
-   disp_onHtmlSubmit ? Logger.log(`The htmlFormObject is  ${JSON.stringify(htmlFormObject)}`) : true;
-   // Include this test in production but not in testing
-   try {
-     var dbInst = new databaseC(databaseNameG);
-    //  disp_testCrFormCKArray ? testCrFormCKArray("Tenant Improvements") : true; // returns true or throws error
-    //  ck2 = setFieldString("Tenant Improvements");
-    //  pid = getCurrPropID_(dbInst,userEmail)[0];
-    //  ret = emptyProp_Detail(pid, ck2); // clear out prop detail, returns t or f
-    //  if (ret) {
-    //    htmlFormObject = xfHtmlObj(htmlFormObject); // tranform htmlFormObject as needed for this form
-    //    if (!htmlFormObject) {
-    //      throw new Error(`problem in ${fS} with xfHtmlObj`);
-    //    }
-       ret = evalProposal(dbInst); // note that you don't really need the htmlformobject
-       return ret
-     
-   } catch (err) {
-     var probS = `In ${fS}, problem initializing`;
-     Logger.log(probS);
-   }
-   return false
- }
+const disp_onHtmlSubmit = true;
+// eslint-disable-next-line no-unused-vars
+function onHtmlSubmit(htmlFormObject = { 'val': "unneeded" }) {
+  var fS = "onHtmlSubmit";
+  var ret;
+  //var ck2, pid;
+  disp_onHtmlSubmit ? Logger.log(`The htmlFormObject is  ${JSON.stringify(htmlFormObject)}`) : true;
+  // Include this test in production but not in testing
+  try {
+    var dbInst = new databaseC(databaseNameG);
+    ret = evalProposal(dbInst);
+    return ret
+
+  } catch (err) {
+    var probS = `In ${fS}, problem initializing`;
+    Logger.log(probS);
+  }
+  return false
+}
 
 const logEvalProposal = false;
 /**
@@ -83,38 +74,38 @@ const logEvalProposal = false;
 function evalProposal(dbInst) {
   const fS = "evalProposal";
   const logLoc = logEvalProposal;
-  var ret, propID, propS;
+  var ret, propID, propNameS;
   try {
     var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
-    [propID, propS] = getCurrPropID_(dbInst, userEmail);
-    var propInst = new proposalC(dbInst, propS);  // create for later use, specifically in handleBaseRent
+    [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
+    var propInst = new proposalC(dbInst, propNameS);  // create for later use, specifically in handleBaseRent
     var propSize = propInst.getSize();
 
     ret = handleExpenses(dbInst, docInst, propSize);
     logLoc ? Logger.log("Expenses: " + ret) : true;
-    if(!ret) { throw new Error(`handleExpenses returned false`)}
-   
+    if (!ret) { throw new Error(`handleExpenses returned false`) }
+
     ret = handleOver(dbInst, docInst, propSize);
     logLoc ? Logger.log("Over: " + ret) : true;
-    if(!ret) { throw new Error(`handleOver returned false`)}
+    if (!ret) { throw new Error(`handleOver returned false`) }
 
-    ret = handleTenAndPrem(dbInst, docInst, propS, propSize);
+    ret = handleTenAndPrem(dbInst, docInst, propNameS, propSize);
     logLoc ? Logger.log("Premises: " + ret) : true;
-    if(!ret) { throw new Error(`handleTenAndPrem returned false`)}
+    if (!ret) { throw new Error(`handleTenAndPrem returned false`) }
 
     ret = handleTI(dbInst, docInst, propSize);
     logLoc ? Logger.log("TI: " + ret) : true;
-    if(!ret) { throw new Error(`handleTI returned false`)}
+    if (!ret) { throw new Error(`handleTI returned false`) }
 
     ret = handleJSON(dbInst, docInst);
     logLoc ? Logger.log("JSON: " + ret) : true;
-    if(!ret) { throw new Error(`handleJSON returned false`)}
+    if (!ret) { throw new Error(`handleJSON returned false`) }
 
     ret = handleBaseRent(dbInst, docInst, propInst);
     logLoc ? Logger.log("BR: " + ret) : true;
-    if(!ret) { throw new Error(`handleBaseRent returned false`)}
+    if (!ret) { throw new Error(`handleBaseRent returned false`) }
 
 
   } catch (err) {
@@ -249,6 +240,7 @@ function handleTI(dbInst, docInst, propSize) {
   //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
     var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
+
     var tiTerms = "";
     pdA.forEach((pd) => {
       if (!correctSize(propSize, pd.clausesize)) return;
@@ -275,10 +267,12 @@ function handleTI(dbInst, docInst, propSize) {
 
 
 /**
- * Purpose: Deal with Premises, Building (Location), tenant
+ * Purpose: deal with Premises, Building (Location), tenant
  *
  * @param  {Object} dbInst - instance of database class
  * @param  {Object} docInst - instance of document class
+ * @param  {string} propIDS - proposal identifier
+ * @param {string} propSize - one of S/M/L
  * @return {boolean} return - true or false
  */
 // attempted fix for propSize
@@ -296,17 +290,25 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
     //retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
 
     var pdA = readInListFromTable(dbInst, "clauses", "ClauseKey", "('premises')");
-    for (var i = 0; i < pdA.length; i++) {
-      if (correctSize(propSize, pdA[i].clausesize)) {
-        foundCorrectSize = true;
-        premClauseBody = pdA[i].clausebody;
+    Logger.log(`In ${fS} pdA is ${pdA}`);
+    if (pdA.length === 0) {
+      throw new Error(`in ${fS} 0 premises clauses ${propSize}`)
+    }
+    if (pdA.length === 1) {
+      premClauseBody = pdA[0].clausebody;
+      foundCorrectSize = true;
+    } else { // if there is more than one premise clause, choose the right one
+      for (var i = 0; i < pdA.length; i++) {
+        if (correctSize(propSize, pdA[i].clausesize)) {
+          foundCorrectSize = true;
+          premClauseBody = pdA[i].clausebody;
+        }
       }
     }
-    // Note: if there are more than one premises clauses that match the propSize
-    // you get the last (latest?) one
-    if (!foundCorrectSize) {
-      throw new Error(`in ${fS} no premises record for proposal size ${propSize}`)
-    }
+    if (!foundCorrectSize) { premClauseBody = pdA[0].clausebody }
+    // if (!foundCorrectSize) {
+    //   throw new Error(`in ${fS} no premises clause matches proposal size: ${propSize}`)
+    // }
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
     premClauseBody = premClauseBody.replace("<<FloorAndSuite>>", spA.floorandsuite);
@@ -334,7 +336,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
 // fixed to include propSize
 function handleExpenses(dbInst, docInst, propSize) {
   var fS = "handleExpenses";
-  var pdA = [];
+  var proposalDetailRows = [];
   // all clauseKeys in expenses UPDATE if Operating Expenses form update
   // when working change this to extract from ck database
   var expInS = clauseKeyObjG.expenses
@@ -346,33 +348,35 @@ function handleExpenses(dbInst, docInst, propSize) {
     // and filter out, or write a query here directly which has the dis-
     // advantage of not excapsulating db calls within gcloudSQL
 
-    pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
-    pdA.forEach((pd) => {
-      if (!correctSize(propSize, pd.clausesize)) return;
-
-      if (pd.section === "OperatingExpenses") {
-        repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-        if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
-        }
-      }
-      if (pd.section === "Electric") {
-        if (pd.proposalclausekey === "elecRentInc") {
-          elRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        } else {
-          elRepS = pd.clausebody;
-        }
-        ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
-        if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
-        }
-      }
-      if (pd.section === "RealEstateTaxes") {
-        retRepS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-        ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
-        if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+    proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
+    proposalDetailRows.forEach(pdRow => {
+      var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+      if (bestFit) {
+        switch (bestFit.section) {
+          case "OperatingExpenses":
+          repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+          ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+          }
+          break;
+          case "Electric":
+            if (bestFit.proposalclausekey === "elecRentInc") {
+              elRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+            } else {
+              elRepS = bestFit.clausebody;
+            }
+            ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
+            if (!ret) {
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+            }
+            break;
+        case "RealEstateTaxes": 
+          retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+          ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+          }
         }
       }
     });
@@ -383,6 +387,62 @@ function handleExpenses(dbInst, docInst, propSize) {
     return false
   }
   return true
+}
+
+function matchProposalSizeWithClause(propSize, ck, proposalDetailRows) {
+  const fS = "matchProposalSizeWithClause";
+  try {
+    var foundRow = "";
+    switch (propSize) {
+      case "L":
+        // find exact match if possible
+        foundRow = proposalDetailRows.find(row => {
+          row.clausekey === ck && row.proposalsize === "L";
+          if (foundRow) return foundRow
+        });
+        foundRow = proposalDetailRows.find(row => {
+          row.clausekey === ck && row.proposalsize === "M";
+          if (foundRow) return foundRow
+        });
+        foundRow = proposalDetailRows.find(row => {
+          row.clausekey === ck && row.proposalsize === "S";
+          if (foundRow) return foundRow
+        });
+        return `In ${fS}: clauseKey ${ck} and ${propSize} not found`
+      case "M":
+        // find exact match if possible
+        foundRow = proposalDetailRows.find(row => {
+          row.clausekey === ck && row.proposalsize === "L";
+          if (foundRow) return foundRow
+        });
+        foundRow = proposalDetailRows.find(row => {
+          row.clausekey === ck && row.proposalsize === "M";
+          if (foundRow) return foundRow
+        });
+        foundRow = proposalDetailRows.find(row => {
+          row.clausekey === ck && row.proposalsize === "S";
+          if (foundRow) { return foundRow }
+        });
+        return `In ${fS}: clauseKey ${ck} and ${propSize} not found`
+      case "S":
+        // try to match S
+        // if no match, throw error
+        break;
+
+      default:
+        break;
+    } // end switch
+
+  } // end try
+
+
+  catch (err) {
+    const probS = `In ${fS}: ${err}`;
+    Logger.log(probS);
+    return false
+  }
+  return true
+
 }
 
 /**
@@ -665,7 +725,7 @@ const log_xfHtmlObj = false;
 // eslint-disable-next-line no-unused-vars
 function xfHtmlObj(htmlFormObject) {
   var fS = "xfHtmlObj";
-  
+
   log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)}`) : true;
   return htmlFormObject;
 }
