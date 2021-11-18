@@ -235,23 +235,24 @@ function handleJSON(dbInst, docInst) {
  */
 // attempted fix on propSize
 function handleTI(dbInst, docInst, propSize) {
-  var fS = "handleTI", probS, repClauseS;
+  var fS = "handleTI", probS, repClauseS,bestFit;
   var tiInS = clauseKeyObjG.ti;
   //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
-    var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
+    var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
 
     var tiTerms = "";
-    pdA.forEach((pd) => {
-      if (!correctSize(propSize, pd.clausesize)) return;
-
-      if (pd.proposalclausekey === "tiAllow") {
-        var tiDollars = curr_formatter.format(pd.proposalanswer);
+    proposalDetailRows.forEach((pdRow) => {
+      bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+      if (bestFit) { 
+      if (bestFit.proposalclausekey === "tiAllow") {
+        var tiDollars = curr_formatter.format(bestFit.proposalanswer);
         updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
       } else {
-        repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
+        repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
         tiTerms = tiTerms + repClauseS + "\n\n"
       }
+    }
     });
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
     if (tiTerms != "") { tiTerms = tiTerms.replace(/\n\n$/, ''); }
@@ -281,13 +282,13 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
   var foundCorrectSize = false;
   var premClauseBody = "";
   try {
-    var jsonyn = false;
-    var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, jsonyn);
+    var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, false);
     var spid = retA[0].spaceidentity;
     var tenantNameS = retA[0].tenantname;
-    retA = readFromTable(dbInst, "survey_spaces", "identity", spid, jsonyn);
+    retA = readFromTable(dbInst, "survey_spaces", "identity", spid, false);
     var spA = retA[0]
     //retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
+    //var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", "('premises')");
 
     var pdA = readInListFromTable(dbInst, "clauses", "ClauseKey", "('premises')");
     Logger.log(`In ${fS} pdA is ${pdA}`);
@@ -299,16 +300,15 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
       foundCorrectSize = true;
     } else { // if there is more than one premise clause, choose the right one
       for (var i = 0; i < pdA.length; i++) {
-        if (correctSize(propSize, pdA[i].clausesize)) {
+        if (pdA[i].clausesize==propSize) {
           foundCorrectSize = true;
           premClauseBody = pdA[i].clausebody;
+          continue;
         }
       }
     }
     if (!foundCorrectSize) { premClauseBody = pdA[0].clausebody }
-    // if (!foundCorrectSize) {
-    //   throw new Error(`in ${fS} no premises clause matches proposal size: ${propSize}`)
-    // }
+
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
     premClauseBody = premClauseBody.replace("<<FloorAndSuite>>", spA.floorandsuite);
@@ -354,12 +354,12 @@ function handleExpenses(dbInst, docInst, propSize) {
       if (bestFit) {
         switch (bestFit.section) {
           case "OperatingExpenses":
-          repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-          ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-          if (!ret) {
-            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
-          }
-          break;
+            repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+            ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+            if (!ret) {
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+            }
+            break;
           case "Electric":
             if (bestFit.proposalclausekey === "elecRentInc") {
               elRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
@@ -371,12 +371,12 @@ function handleExpenses(dbInst, docInst, propSize) {
               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
             }
             break;
-        case "RealEstateTaxes": 
-          retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-          ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
-          if (!ret) {
-            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
-          }
+          case "RealEstateTaxes":
+            retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+            ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
+            if (!ret) {
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+            }
         }
       }
     });
@@ -389,73 +389,53 @@ function handleExpenses(dbInst, docInst, propSize) {
   return true
 }
 
-function matchProposalSizeWithClause(propSize, ck, proposalDetailRows) {
+/**
+ * Purpose: takes a proposal size, a clausekey, and a set of rows from
+ * the prop_detail_ex view and tests from L->M->S to find the best
+ * match, throwing an error if there are no matches
+ *
+ * @param  {String} propSize - param
+ * @param  {String} ck - clause key
+ * @param  {Object[]} pdr - stands for proposal detail rows
+ * @return {Object} r - row object or false
+ */
+
+function matchProposalSizeWithClause(propSize, ck, pdr) {
   const fS = "matchProposalSizeWithClause";
   try {
-    var foundRow = "";
+    var r = "";
+    var probS = `ck ${ck} and clause size ${propSize} not found`
     switch (propSize) {
       case "L":
         // find exact match if possible
-        foundRow = proposalDetailRows.find(row => {
-          row.clausekey === ck && row.proposalsize === "L";
-          if (foundRow) return foundRow
-        });
-        foundRow = proposalDetailRows.find(row => {
-          row.clausekey === ck && row.proposalsize === "M";
-          if (foundRow) return foundRow
-        });
-        foundRow = proposalDetailRows.find(row => {
-          row.clausekey === ck && row.proposalsize === "S";
-          if (foundRow) return foundRow
-        });
-        return `In ${fS}: clauseKey ${ck} and ${propSize} not found`
+        r = retRowF("L", ck, pdr); if (r) return r;
+        r = retRowF("M", ck, pdr); if (r) return r;
+        r = retRowF("S", ck, pdr); if (r) return r;
+        throw new Error(probS)
       case "M":
         // find exact match if possible
-        foundRow = proposalDetailRows.find(row => {
-          row.clausekey === ck && row.proposalsize === "L";
-          if (foundRow) return foundRow
-        });
-        foundRow = proposalDetailRows.find(row => {
-          row.clausekey === ck && row.proposalsize === "M";
-          if (foundRow) return foundRow
-        });
-        foundRow = proposalDetailRows.find(row => {
-          row.clausekey === ck && row.proposalsize === "S";
-          if (foundRow) { return foundRow }
-        });
-        return `In ${fS}: clauseKey ${ck} and ${propSize} not found`
+        r = retRowF("M", ck, pdr); if (r) return r;
+        r = retRowF("S", ck, pdr); if (r) return r;
+        throw new Error(probS)
       case "S":
-        // try to match S
-        // if no match, throw error
-        break;
-
-      default:
-        break;
+        r = retRowF("S", ck, pdr); if (r) return r;
+        throw new Error(probS)
     } // end switch
 
   } // end try
 
-
   catch (err) {
     const probS = `In ${fS}: ${err}`;
     Logger.log(probS);
-    return false
   }
-  return true
-
+  // if we haven't returned above it measn that we didn't find any matches
+  return false
 }
 
-/**
- * Purpose
- *
- * @param  {string} propSize - size of proposal
- * @param  {string} clauseSize - size of clause 
- * @return {boolean} t/f - return ture or false
- */
-function correctSize(propSize, clauseSize) {
-  if (clauseSize === propSize) return true;
-  if (clauseSize.includes("A")) return true;
-  if (clauseSize.includes(propSize)) return true;
+function retRowF(findSize, ck, pdr) {
+  for (var i = 0; i < pdr.length; i++) {
+    if (pdr[i].proposalclausekey === ck && pdr[i].clausesize === findSize) return pdr[i]
+  }
   return false
 }
 
@@ -477,32 +457,37 @@ function handleOver(dbInst, docInst, propSize) {
   try {
     // var overInsCl = "('secDeposit')";
     var overInsCl = clauseKeyObjG.security;
-    var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
-    pdA.forEach((pd) => {
-      if (!correctSize(propSize, pd.clausesize)) return;
-      repClauseS = pd.clausebody.replace(pd.replstruct, pd.proposalanswer);
-      ret = updateTemplateBody(pd.replstruct, repClauseS, docInst);
-      if (!ret) {
-        throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+    var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
+
+    proposalDetailRows.forEach((pdRow) => {
+      var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+      if (bestFit) {
+        repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+        ret = updateTemplateBody(bestFit.replstruct, repClauseS, docInst);
+        if (!ret) {
+          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+        }
       }
     });
     // direct replacements: 
-
     //var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
     var overInsS = clauseKeyObjG.overview;
-    pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
-    pdA.forEach((pd) => {
-      if (!correctSize(propSize, pd.clausesize)) return;
-      if (pd.proposalclausekey === "commDate") {
-        // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
-        var dA = pd.proposalanswer.split('-');
-        repS = `${dA[1]}/${dA[2]}/${dA[0]}`;
-      } else {
-        repS = pd.proposalanswer;
-      }
-      ret = updateTemplateBody(pd.replstruct, repS, docInst);
-      if (!ret) {
-        throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+    proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
+
+    proposalDetailRows.forEach((pdRow) => {
+      var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+      if (bestFit) {
+        if (bestFit.proposalclausekey === "commDate") {
+          // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
+          var dA = bestFit.proposalanswer.split('-');
+          repS = `${dA[1]}/${dA[2]}/${dA[0]}`;
+        } else {
+          repS = bestFit.proposalanswer;
+        }
+        ret = updateTemplateBody(bestFit.replstruct, repS, docInst);
+        if (!ret) {
+          throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+        }
       }
     });
 
@@ -519,10 +504,6 @@ function handleOver(dbInst, docInst, propSize) {
   return true
 
 }
-
-/*************************************Test ************************************ */
-
-
 
 /**
  * Purpose: replace a chunk of text in the docInst, using replacement structure and replacement text
