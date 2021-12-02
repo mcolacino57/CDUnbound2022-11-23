@@ -81,7 +81,7 @@
    * { 'ans': ans, 'quest': quest, "sect": sect };
    */
    function createTable(propA) {
-    // returns [{ 'ans': ProposalAnswer, 'quest': ProposalQuestion, 'sect': section },..]
+    // returns [{ 'ans': ProposalAnswer, 'clause': ProposalClauseKey, 'sect': section },..]
     var row,c1,c2,c3,tab;
     tab = document.getElementById("readyTable");
     tab.innerHTML = "";
@@ -89,7 +89,7 @@
       console.log(pdetail);
       row = document.createElement("tr");
       c1 = document.createElement("td");
-      c1.textContent = pdetail.quest;
+      c1.textContent = pdetail.clause;
       c2 = document.createElement("td");
       c2.textContent = pdetail.ans;
       c3 = document.createElement("td");
