@@ -841,7 +841,7 @@ function getOpExpData(dbInst, proposalID) {
     results.beforeFirst(); // reset to beginning
     while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
       var ansS = results.getString("ProposalAnswer");
-      var ckS = results.getString("ProposalClauseKey")
+      var ckS = results.getString("ProposalClauseKey");
       var retObj = { 'ck': ckS, 'ans': ansS };
       resA.push(retObj);
     }
@@ -992,7 +992,7 @@ function getPropSize(dbInst, propID, userS) {
       // var proposalID = propInst.getID();
   
       const locConn = dbInst.getconn(); // get connection from the instance 
-      const qryS = `SELECT ProposalQuestion, ProposalAnswer, section FROM applesmysql.prop_detail_ex where ProposalName like "${proposalNameS}" 
+      const qryS = `SELECT ProposalClauseKey, ProposalAnswer, section FROM applesmysql.prop_detail_ex where ProposalName like "${proposalNameS}" 
       order by section;`;
       const stmt = locConn.prepareStatement(qryS);
       const results = stmt.executeQuery(qryS);
@@ -1000,9 +1000,9 @@ function getPropSize(dbInst, propID, userS) {
       results.beforeFirst(); // reset to beginning
       while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
         var ans = results.getString("ProposalAnswer");
-        var quest = results.getString("ProposalQuestion");
+        var ck = results.getString("ProposalClauseKey");
         var sect = results.getString("section");
-        var retObj = { 'ans': ans, 'quest': quest, "sect": sect };
+        var retObj = { 'ans': ans, 'clause': ck, "sect": sect };
         resA.push(retObj);
       }
     }
