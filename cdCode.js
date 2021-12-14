@@ -6,7 +6,7 @@ docID , foldID */
 
 /*global Utilities , Logger  , databaseC , docC , proposalC,
  getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows ,
- getProposalNamesAndIDs , getCurrentProposal , HtmlService , saveAsJSON*/
+ getProposalNamesAndIDs , getCurrentProposal , HtmlService , saveAsJSON , readInClausesFromTable */
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -235,7 +235,7 @@ function handleJSON(dbInst, docInst) {
  */
 // attempted fix on propSize
 function handleTI(dbInst, docInst, propSize) {
-  var fS = "handleTI", probS, repClauseS,bestFit;
+  var fS = "handleTI", probS, repClauseS,bestFitRow;
   var tiInS = clauseKeyObjG.ti;
   //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
@@ -243,13 +243,13 @@ function handleTI(dbInst, docInst, propSize) {
 
     var tiTerms = "";
     proposalDetailRows.forEach((pdRow) => {
-      bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFit) { 
-      if (bestFit.proposalclausekey === "tiAllow") {
-        var tiDollars = curr_formatter.format(bestFit.proposalanswer);
+      bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+      if (bestFitRow) { 
+      if (bestFitRow.proposalclausekey === "tiAllow") {
+        var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
         updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
       } else {
-        repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+        repClauseS = bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer);
         tiTerms = tiTerms + repClauseS + "\n\n"
       }
     }
@@ -287,10 +287,8 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
     var tenantNameS = retA[0].tenantname;
     retA = readFromTable(dbInst, "survey_spaces", "identity", spid, false);
     var spA = retA[0]
-    //retA = readFromTable(dbInst, "clauses", "ClauseKey", "premises", jsonyn);
-    //var pdA = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", "('premises')");
 
-    var pdA = readInListFromTable(dbInst, "clauses", "ClauseKey", "('premises')");
+    var pdA = readInClausesFromTable(dbInst);
     Logger.log(`In ${fS} pdA is ${pdA}`);
     if (pdA.length === 0) {
       throw new Error(`in ${fS} 0 premises clauses ${propSize}`)
