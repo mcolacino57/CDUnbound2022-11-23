@@ -14,10 +14,10 @@ const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 // const userEmail = Session.getActiveUser().getEmail();
 const userEmail = "mcolacino@squarefoot.com";
-const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE';     // Proposal Tempate 1
+const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE'; // Proposal Tempate 1
 
 // const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate spreadsheet--general debug
-const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Generation in MyDrive
+const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q'; // Proposal Generation in MyDrive
 const databaseNameG = "applesmysql";
 
 
@@ -27,7 +27,7 @@ const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
   security: "('secDeposit')",
   overview: "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
-  ti: "('tiAllow','tiFreight','tiAccess','tiCompBid')"
+  ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
 };
 
 
@@ -46,7 +46,9 @@ const clauseKeyObjG = {
  */
 const disp_onHtmlSubmit = true;
 // eslint-disable-next-line no-unused-vars
-function onHtmlSubmit(htmlFormObject = { 'val': "unneeded" }) {
+function onHtmlSubmit(htmlFormObject = {
+  'val': "unneeded"
+}) {
   var fS = "onHtmlSubmit";
   var ret;
   //var ck2, pid;
@@ -80,32 +82,44 @@ function evalProposal(dbInst) {
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
     [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
-    var propInst = new proposalC(dbInst, propNameS);  // create for later use, specifically in handleBaseRent
+    var propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
     var propSize = propInst.getSize();
 
     ret = handleExpenses(dbInst, docInst, propSize);
     logLoc ? Logger.log("Expenses: " + ret) : true;
-    if (!ret) { throw new Error(`handleExpenses returned false`) }
+    if (!ret) {
+      throw new Error(`handleExpenses returned false`)
+    }
 
     ret = handleOver(dbInst, docInst, propSize);
     logLoc ? Logger.log("Over: " + ret) : true;
-    if (!ret) { throw new Error(`handleOver returned false`) }
+    if (!ret) {
+      throw new Error(`handleOver returned false`)
+    }
 
     ret = handleTenAndPrem(dbInst, docInst, propNameS, propSize);
     logLoc ? Logger.log("Premises: " + ret) : true;
-    if (!ret) { throw new Error(`handleTenAndPrem returned false`) }
+    if (!ret) {
+      throw new Error(`handleTenAndPrem returned false`)
+    }
 
     ret = handleTI(dbInst, docInst, propSize);
     logLoc ? Logger.log("TI: " + ret) : true;
-    if (!ret) { throw new Error(`handleTI returned false`) }
+    if (!ret) {
+      throw new Error(`handleTI returned false`)
+    }
 
     ret = handleJSON(dbInst, docInst);
     logLoc ? Logger.log("JSON: " + ret) : true;
-    if (!ret) { throw new Error(`handleJSON returned false`) }
+    if (!ret) {
+      throw new Error(`handleJSON returned false`)
+    }
 
     ret = handleBaseRent(dbInst, docInst, propInst);
     logLoc ? Logger.log("BR: " + ret) : true;
-    if (!ret) { throw new Error(`handleBaseRent returned false`) }
+    if (!ret) {
+      throw new Error(`handleBaseRent returned false`)
+    }
 
 
   } catch (err) {
@@ -132,13 +146,14 @@ function handleBaseRent(dbInst, docInst, propInst) {
 
   try {
     var propID = propInst.getID();
-    var offsetObj = {}, offset = 0;
+    var offsetObj = {},
+      offset = 0;
     // get the local doc body from the doc instance
     var doc = docInst.locBody;
     // Find the replacement text
     var rgel = doc.findText("<<BaseRentalRate>>");
     var el = rgel.getElement().getParent(); // take the found element and get its parent
-    var loopCtl = el.toString()  // use the type of the parent (as string) to start the loop
+    var loopCtl = el.toString() // use the type of the parent (as string) to start the loop
     while (loopCtl != "BODY_SECTION") { // stop when you get to the body section
       var par = el.getParent();
       var parType = par.getType(); // put parent type into var
@@ -164,7 +179,9 @@ function handleBaseRent(dbInst, docInst, propInst) {
     // call the sort function (below) to order by begin date (note should be done in DB)
     records.sort(sortDate);
     // create the base rent table; header first
-    var t = [["Begin Date", "End Date", "Rent PSF"]];
+    var t = [
+      ["Begin Date", "End Date", "Rent PSF"]
+    ];
     // for all the base records, push the created row onto the table
     for (var j = 0; j < records.length; j++) {
       var row = [
@@ -180,8 +197,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
     s = c0.getChild(2).getType().toString();
     // eslint-disable-next-line no-unused-vars
     s = c0.getChild(3).getType().toString();
-  }
-  catch (err) {
+  } catch (err) {
     Logger.log(`In ${fS}: ${err}`);
     return false
   }
@@ -198,7 +214,8 @@ function handleBaseRent(dbInst, docInst, propInst) {
  * @return {boolean} t/f - return true or false
  */
 function handleJSON(dbInst, docInst) {
-  var fS = "handleJSON", probS;
+  var fS = "handleJSON",
+    probS;
   var userPrefixS = userEmail.split('@')[0];
   var fileName = userPrefixS + ".json";
   try {
@@ -235,7 +252,8 @@ function handleJSON(dbInst, docInst) {
  */
 // attempted fix on propSize
 function handleTI(dbInst, docInst, propSize) {
-  var fS = "handleTI", probS, repClauseS,bestFitRow;
+  var fS = "handleTI",
+    probS, repClauseS, bestFitRow;
   var tiInS = clauseKeyObjG.ti;
   //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
@@ -244,18 +262,34 @@ function handleTI(dbInst, docInst, propSize) {
     var tiTerms = "";
     proposalDetailRows.forEach((pdRow) => {
       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFitRow) { 
-      if (bestFitRow.proposalclausekey === "tiAllow") {
-        var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
-        updateTemplateBody("<<TenantImprovementPSF>>", tiDollars, docInst);
-      } else {
-        repClauseS = bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer);
-        tiTerms = tiTerms + repClauseS + "\n\n"
+      if (bestFitRow) {
+        switch (bestFitRow.proposalclausekey) {
+          case "tiAllow":
+            if (checkZeroValue(bestFitRow.proposalanswer)) {
+              // If we find a non-zero tiAllow, then we format it
+              var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
+              // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
+              // which then gets added to tiTerms as the first chunk
+              tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars);
+            }
+            break;
+          case "llWork":
+            if (bestFitRow.proposalanswer != "") {
+              tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer);
+            }
+            break;
+          default:
+            repClauseS = bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer);
+            tiTerms = tiTerms + repClauseS + "\n\n";
+            break;
+        }
       }
-    }
-    });
+    }); // forEach
+
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
-    if (tiTerms != "") { tiTerms = tiTerms.replace(/\n\n$/, ''); }
+    if (tiTerms != "") {
+      tiTerms = tiTerms.replace(/\n\n$/, '');
+    }
     updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
 
   } catch (err) {
@@ -265,6 +299,22 @@ function handleTI(dbInst, docInst, propSize) {
   }
   return true
 }
+
+/**
+ * Purpose check if a value is 0 or equivalent
+ *
+ * @param  {String} param_name - param
+ * @param  {itemReponse[]} param_name - an array of responses 
+ * @return {String} retS - return value
+ */
+function checkZeroValue(valS) {
+  // can convert to number and then check if >0
+  var valN = +valS;
+  if (!valN) return false
+  if (valN <= 0) return false
+  if (valN > 0) return true
+}
+
 
 
 /**
@@ -278,7 +328,8 @@ function handleTI(dbInst, docInst, propSize) {
  */
 // attempted fix for propSize
 function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
-  var fS = "handleTenAndPrem", probS;
+  var fS = "handleTenAndPrem",
+    probS;
   var foundCorrectSize = false;
   var premClauseBody = "";
   try {
@@ -289,7 +340,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
     var spA = retA[0]
 
     var pdA = readInClausesFromTable(dbInst);
-    Logger.log(`In ${fS} pdA is ${pdA}`);
+    Logger.log(`In ${fS} pdA is ${JSON.stringify(pdA)}`);
     if (pdA.length === 0) {
       throw new Error(`in ${fS} 0 premises clauses ${propSize}`)
     }
@@ -298,14 +349,16 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
       foundCorrectSize = true;
     } else { // if there is more than one premise clause, choose the right one
       for (var i = 0; i < pdA.length; i++) {
-        if (pdA[i].clausesize==propSize) {
+        if (pdA[i].clausesize == propSize) {
           foundCorrectSize = true;
           premClauseBody = pdA[i].clausebody;
           continue;
         }
       }
     }
-    if (!foundCorrectSize) { premClauseBody = pdA[0].clausebody }
+    if (!foundCorrectSize) {
+      premClauseBody = pdA[0].clausebody
+    }
 
     var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
@@ -378,8 +431,7 @@ function handleExpenses(dbInst, docInst, propSize) {
         }
       }
     });
-  }
-  catch (err) {
+  } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
     return false
@@ -406,22 +458,27 @@ function matchProposalSizeWithClause(propSize, ck, pdr) {
     switch (propSize) {
       case "L":
         // find exact match if possible
-        r = retRowF("L", ck, pdr); if (r) return r;
-        r = retRowF("M", ck, pdr); if (r) return r;
-        r = retRowF("S", ck, pdr); if (r) return r;
+        r = retRowF("L", ck, pdr);
+        if (r) return r;
+        r = retRowF("M", ck, pdr);
+        if (r) return r;
+        r = retRowF("S", ck, pdr);
+        if (r) return r;
         throw new Error(probS)
       case "M":
         // find exact match if possible
-        r = retRowF("M", ck, pdr); if (r) return r;
-        r = retRowF("S", ck, pdr); if (r) return r;
+        r = retRowF("M", ck, pdr);
+        if (r) return r;
+        r = retRowF("S", ck, pdr);
+        if (r) return r;
         throw new Error(probS)
       case "S":
-        r = retRowF("S", ck, pdr); if (r) return r;
+        r = retRowF("S", ck, pdr);
+        if (r) return r;
         throw new Error(probS)
     } // end switch
 
   } // end try
-
   catch (err) {
     const probS = `In ${fS}: ${err}`;
     Logger.log(probS);
@@ -493,8 +550,7 @@ function handleOver(dbInst, docInst, propSize) {
     if (!ret) {
       throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
     }
-  }
-  catch (err) {
+  } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
     return false
@@ -542,8 +598,10 @@ const logChkMajorPropDetailCategories = false;
  */
 function chkMajorPropDetailCategories(propID) {
   try {
-    var fS = "chkMajorPropDetailCategories", qryS = "";
-    var incSec = [], excSec = [];
+    var fS = "chkMajorPropDetailCategories",
+      qryS = "";
+    var incSec = [],
+      excSec = [];
     var results;
 
     const dbInst = new databaseC("applesmysql");
@@ -569,8 +627,7 @@ function chkMajorPropDetailCategories(propID) {
     // excSec.length==0 ? excSec =["none"] : true;
     logChkMajorPropDetailCategories ? Logger.log(`in: ${incSec} missing: ${excSec}`) : true;
     return [incSec, excSec, excSec.length]
-  }
-  catch (err) {
+  } catch (err) {
     Logger.log(`In ${fS}: ${err}`);
     return false
   }
@@ -591,8 +648,7 @@ function logStatusofData(propID) {
   if (excludedLen === 0) {
     logLogStatusofData ? Logger.log(`In CD Bound / logStatusofData all major sections included`) : true;
     return true
-  }
-  else {
+  } else {
     excSec.forEach((sec) => {
       Logger.log(`In ${fS} missing sections: ${sec}`);
     });
@@ -640,7 +696,9 @@ function doGet(request) {
   propA = getProposalNamesAndIDs(dbInst, userEmail);
   Logger.log(`In doGet: ${propA}`);
   for (var i in propA) {
-    ddvaluesA.push({ proposal: `${propA[i][0]}` }); // create dropdown array
+    ddvaluesA.push({
+      proposal: `${propA[i][0]}`
+    }); // create dropdown array
   }
   var pN = getCurrentProposal(userEmail)[1];
   Logger.log(`ddvalues: ${JSON.stringify(ddvaluesA)}`);
@@ -708,6 +766,3 @@ function xfHtmlObj(htmlFormObject) {
   log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)}`) : true;
   return htmlFormObject;
 }
-
-
-
