@@ -253,43 +253,47 @@ function handleJSON(dbInst, docInst) {
 // attempted fix on propSize
 function handleTI(dbInst, docInst, propSize) {
   var fS = "handleTI",
-    probS, repClauseS, bestFitRow;
+    probS, bestFitRow;
   var tiInS = clauseKeyObjG.ti;
   //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
   try {
     var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
 
     var tiTerms = "";
-    proposalDetailRows.forEach((pdRow) => {
+    // allowance--comes first always
+    proposalDetailRows.forEach(pdRow => {
+      bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+        if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
+          var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
+          // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
+          // which then gets added to tiTerms as the first chunk
+          tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";    
+      } 
+    });
+    // work--comes next
+    proposalDetailRows.forEach(pdRow => {
+      bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+      if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
+        tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+        console.log(`In llWork: replstruct is ${bestFitRow.replstruct} and clausebody is ${bestFitRow.clausebody} and answer is ${bestFitRow.proposalanswer}`);
+      }
+      
+    });
+    //additional provisions--after and unordered
+    proposalDetailRows.forEach(pdRow => {
       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
       if (bestFitRow) {
-        switch (bestFitRow.proposalclausekey) {
-          case "tiAllow":
-            if (checkZeroValue(bestFitRow.proposalanswer)) {
-              // If we find a non-zero tiAllow, then we format it
-              var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
-              // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
-              // which then gets added to tiTerms as the first chunk
-              tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars);
-            }
-            break;
-          case "llWork":
-            if (bestFitRow.proposalanswer != "") {
-              tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer);
-            }
-            break;
-          default:
-            repClauseS = bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer);
-            tiTerms = tiTerms + repClauseS + "\n\n";
-            break;
+        if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
+          tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
         }
       }
-    }); // forEach
+    });
 
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
     if (tiTerms != "") {
       tiTerms = tiTerms.replace(/\n\n$/, '');
     }
+    console.log(`tiTerms: ${tiTerms}`);
     updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
 
   } catch (err) {
