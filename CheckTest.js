@@ -3,7 +3,7 @@
 
 /*global  userEmail , logStatusofData, evalProposal , getCKThisForm
 chkMajorPropDetailCategories,getCurrPropID_  , databaseC , 
-UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC , handleTenAndPrem ,
+UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
 onHtmlSubmit */
 
 // eslint-disable-next-line no-unused-vars
@@ -97,4 +97,37 @@ function testHandleBR() {
     var ret = handleBaseRent(dbInst, docInst, propInst);
     return ret
   
+}
+
+// eslint-disable-next-line no-unused-vars
+function testReadInClausesFromTable() {
+  var dbInst = new databaseC(databaseNameG);
+  // eslint-disable-next-line no-undef
+  var ret = readInClausesFromTable(dbInst);
+  console.log(JSON.stringify(ret));
+
+}
+
+// eslint-disable-next-line no-unused-vars
+function testZeroValue() {
+  
+  var ret = checkZeroValue("")
+  console.log(ret);
+  ret = checkZeroValue("0")
+  console.log(ret);
+  ret = checkZeroValue("0.0")
+  console.log(ret);
+  ret = checkZeroValue(undefined)
+  console.log(ret);
+  ret = checkZeroValue("text")
+  console.log(ret);
+  ret = checkZeroValue("0.00")
+  console.log(ret);
+   ret = checkZeroValue("3.00")
+  console.log(ret);
+   ret = checkZeroValue("3")
+  console.log(ret);
+   ret = checkZeroValue("3.")
+  console.log(ret);
+
 }
