@@ -17,6 +17,7 @@ const userEmail = "mcolacino@squarefoot.com";
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE'; // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q'; // Proposal Generation in MyDrive
 const databaseNameG = "applesmysql";
+const dbInstG = new databaseC(databaseNameG);
 
 
 /************** clauseKey strings object ***********************/
@@ -42,6 +43,7 @@ Logger = BetterLog.useSpreadsheet(ssLogID);
  * @return {boolean    var probS = `In onSubmit, propblem initializing`;
  } t/f 
  */
+
 const disp_onHtmlSubmit = false;
 // eslint-disable-next-line no-unused-vars
 function onHtmlSubmit(htmlFormObject = {'val': "unneeded"}) {
@@ -51,7 +53,7 @@ function onHtmlSubmit(htmlFormObject = {'val': "unneeded"}) {
   disp_onHtmlSubmit ? Logger.log(`The htmlFormObject is  ${JSON.stringify(htmlFormObject)}`) : true;
   // Include this test in production but not in testing
   try {
-    var dbInst = new databaseC(databaseNameG);
+    var dbInst = dbInstG;
     ret = evalProposal(dbInst);
     return ret
 
@@ -617,7 +619,8 @@ function chkMajorPropDetailCategories(propID) {
       excSec = [];
     var results;
 
-    const dbInst = new databaseC("applesmysql");
+   // const dbInst = new databaseC("applesmysql");
+   const dbInst = dbInstG;
     var locConn = dbInst.getconn(); // get connection from the instance
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
@@ -701,13 +704,14 @@ function sortDate(r1, r2) {
 
 // eslint-disable-next-line no-unused-vars
 function doGet(request) {
-  const dbInst = new databaseC(databaseNameG);
+  // const dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   // eslint-disable-next-line no-undef
   var ddvaluesA = []; // values for proposal dd (dropdown)
   var propA = [];
   // gets a list that looks like [ [name, id],...] - propA
   propA = getProposalNamesAndIDs(dbInst, userEmail);
-  Logger.log(`In doGet: ${propA} `);
+  Logger.log(`In doGet: ${JSON.stringify(propA)} `);
   for (var i in propA) {
     ddvaluesA.push({
       proposal: `${propA[i][0]} `

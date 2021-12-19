@@ -1,5 +1,5 @@
-/*global databaseNameG , databaseC , Logger , userEmail , SpreadsheetApp , 
-getCKThisForm , proposalC 
+/*global  Logger , userEmail , SpreadsheetApp , 
+getCKThisForm , proposalC , dbInstG
 */
 /* exported readInListFromTable, , writeToTable , 
 getProposalData , getProposalNamesAndIDs , getProposalNames , getAddressSuiteFloorSF,
@@ -31,7 +31,8 @@ function testclientSetProposalCurrent() {
 // Modified 210714 to include json y/n
 const logReadFromTable = false;
 const maxRows = 1000;
-function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn=true) {
+
+function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
   var fS = "readFromTable";
   var logLoc = logReadFromTable;
   /*********connect to database ************************************ */
@@ -54,10 +55,10 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn=true) {
     return false
   }
   var dataA = [];
-  while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
+  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
     var recA = [];
     for (var col = 0; col < numCols; col++) {
-      recA.push(results.getString(col + 1));  // create inner array(s)
+      recA.push(results.getString(col + 1)); // create inner array(s)
     }
     dataA.push(recA); // push inner array into outside array
   }
@@ -89,8 +90,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn=true) {
   // console.log(retA);
   if (jsonyn) {
     return retA
-  }
-  else {
+  } else {
     return rowA
   }
 }
@@ -108,6 +108,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn=true) {
  */
 
 const logReadInListFromTable = false;
+
 function readInListFromTable(dbInst, tableNameS, colS, inListS) {
   var fS = "readInListFromTable";
   var logLoc = logReadInListFromTable;
@@ -135,10 +136,10 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
     return problemS
   }
   var dataA = [];
-  while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
+  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
     var recA = [];
     for (var col = 0; col < numCols; col++) {
-      recA.push(results.getString(col + 1));  // create inner array(s)
+      recA.push(results.getString(col + 1)); // create inner array(s)
     }
     dataA.push(recA); // push inner array into outside array
   }
@@ -183,69 +184,69 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
  * return value is in the form: 
  */
 
- const disp_readInClausesFromTable = false;
- // eslint-disable-next-line no-unused-vars
- function readInClausesFromTable(dbInst) {
-   var fS = "readInClausesFromTable";
-   var logLoc = disp_readInClausesFromTable;
-   var problemS;
-   /*********connect to database ************************************ */
-   try {
-     var locConn = dbInst.getconn(); // get connection from the instance
-     logLoc ? console.log(locConn.toString()) : true;
-     var stmt = locConn.createStatement();
-     stmt.setMaxRows(maxRows);
-   } catch (err) {
-     problemS = `In ${fS} issue getting connection or creating statement: ${err}`;
-     console.log(problemS);
-     return problemS
-   }
-   /******************extract rows that meet select criteria ********* */
-   var qryS = `SELECT * FROM clauses where ClauseVersion = 'current' and ClauseKey = 'premises'  ;`;
-   logLoc ? console.log(qryS) : true;
-   try {
-     var results = stmt.executeQuery(qryS);
-     var numCols = results.getMetaData().getColumnCount();
-   } catch (err) {
-     problemS = `In ${fS} problem with executing qryS ${qryS} : ${err}`;
-     console.log(problemS);
-     return problemS
-   }
-   var dataA = [];
-   while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
-     var recA = [];
-     for (var col = 0; col < numCols; col++) {
-       recA.push(results.getString(col + 1));  // create inner array(s)
-     }
-     dataA.push(recA); // push inner array into outside array
-   }
-   // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
-   logLoc ? console.log(dataA) : true;
- 
-   /**************************now get the header names ************************** */
-   qryS = `SHOW COLUMNS FROM clauses;`
-   try {
-     var stmt2 = locConn.createStatement();
-     var colA = [];
-     var cols = stmt2.executeQuery(qryS);
-     while (cols.next()) {
-       colA.push(cols.getString(1));
-     }
-   } catch (err) {
-     problemS = `In ${fS} problem with executing query : ${err}`
-     console.log(problemS);
-     return problemS
-   }
- 
-   var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
-   logLoc ? console.log(rowA) : true;
- 
-   results.close();
-   stmt.close();
-   stmt2.close();
- 
-   return rowA
- }
+const disp_readInClausesFromTable = false;
+// eslint-disable-next-line no-unused-vars
+function readInClausesFromTable(dbInst) {
+  var fS = "readInClausesFromTable";
+  var logLoc = disp_readInClausesFromTable;
+  var problemS;
+  /*********connect to database ************************************ */
+  try {
+    var locConn = dbInst.getconn(); // get connection from the instance
+    logLoc ? console.log(locConn.toString()) : true;
+    var stmt = locConn.createStatement();
+    stmt.setMaxRows(maxRows);
+  } catch (err) {
+    problemS = `In ${fS} issue getting connection or creating statement: ${err}`;
+    console.log(problemS);
+    return problemS
+  }
+  /******************extract rows that meet select criteria ********* */
+  var qryS = `SELECT * FROM clauses where ClauseVersion = 'current' and ClauseKey = 'premises'  ;`;
+  logLoc ? console.log(qryS) : true;
+  try {
+    var results = stmt.executeQuery(qryS);
+    var numCols = results.getMetaData().getColumnCount();
+  } catch (err) {
+    problemS = `In ${fS} problem with executing qryS ${qryS} : ${err}`;
+    console.log(problemS);
+    return problemS
+  }
+  var dataA = [];
+  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+    var recA = [];
+    for (var col = 0; col < numCols; col++) {
+      recA.push(results.getString(col + 1)); // create inner array(s)
+    }
+    dataA.push(recA); // push inner array into outside array
+  }
+  // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
+  logLoc ? console.log(dataA) : true;
+
+  /**************************now get the header names ************************** */
+  qryS = `SHOW COLUMNS FROM clauses;`
+  try {
+    var stmt2 = locConn.createStatement();
+    var colA = [];
+    var cols = stmt2.executeQuery(qryS);
+    while (cols.next()) {
+      colA.push(cols.getString(1));
+    }
+  } catch (err) {
+    problemS = `In ${fS} problem with executing query : ${err}`
+    console.log(problemS);
+    return problemS
+  }
+
+  var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
+  logLoc ? console.log(rowA) : true;
+
+  results.close();
+  stmt.close();
+  stmt2.close();
+
+  return rowA
+}
 
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
@@ -257,7 +258,8 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
  */
 
 const logReadAllFromTable = false;
-function readAllFromTable(dbInst, tableNameS,jsonyn=true) {
+
+function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
   var fS = "readAllFromTable";
   var logLoc = logReadAllFromTable;
   /*********connect to database ************************************ */
@@ -281,10 +283,10 @@ function readAllFromTable(dbInst, tableNameS,jsonyn=true) {
     return false
   }
   var dataA = [];
-  while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
+  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
     var recA = [];
     for (var col = 0; col < numCols; col++) {
-      recA.push(results.getString(col + 1));  // create inner array(s)
+      recA.push(results.getString(col + 1)); // create inner array(s)
     }
     dataA.push(recA); // push inner array into outside array
   }
@@ -310,19 +312,18 @@ function readAllFromTable(dbInst, tableNameS,jsonyn=true) {
   }
   if (jsonyn) {
     return retA
-  }
-  else {
+  } else {
     return rowA
   }
 }
 
 /* 
-  * Purpose: get an array of ProposalNames and IDs from proposals table
-  *         based upon the name of the user
-  *
-  * @param  {String} userS - optional user string (email)
-  * @return {array} propNameIDA - 2D array: name, id
-  */
+ * Purpose: get an array of ProposalNames and IDs from proposals table
+ *         based upon the name of the user
+ *
+ * @param  {String} userS - optional user string (email)
+ * @return {array} propNameIDA - 2D array: name, id
+ */
 
 function getProposalNamesAndIDs(dbInst, userS = userEmail) {
   var fS = "getProposalNamesAndIDs";
@@ -334,8 +335,8 @@ function getProposalNamesAndIDs(dbInst, userS = userEmail) {
   try {
     ret = readFromTable(dbInst, tableNameS, colNameS, searchS, jsonyn);
     if (!ret) throw new Error(`problem reading from table ${tableNameS}`);
-  var propNameIDA = ret.map(function (record) {
-    return [record.proposalname, record.proposalid]
+    var propNameIDA = ret.map(function (record) {
+      return [record.proposalname, record.proposalid]
     });
   } catch (err) {
     var probS = `In ${fS} error ${err}`;
@@ -356,7 +357,8 @@ function getProposalNamesAndIDs(dbInst, userS = userEmail) {
 const logGetAddressSuitFloorSF = false;
 // eslint-disable-next-line no-unused-vars
 function getAddressSuiteFloorSF(userS = userEmail) {
-  var dbInst = new databaseC(databaseNameG);
+  // var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var fS, sS, ssS;
   var tableNameS = "sub_spaces"; // this is actually a view but should work the same
   var jsonyn = true;
@@ -386,7 +388,7 @@ function getAddressSuiteFloorSF(userS = userEmail) {
 const logGetSpaceDisplay = false;
 // eslint-disable-next-line no-unused-vars
 function getSpaceDisplay(userS = userEmail) {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var tableNameS = "survey_spaces"; // 
   var jsonyn = true;
   var ret = readAllFromTable(dbInst, tableNameS, jsonyn);
@@ -405,14 +407,15 @@ function getSpaceDisplay(userS = userEmail) {
 
 
 /** 
-  * Purpose: Get data from the proposal table
-  *         based upon the name of the user
-  *
-  * @param {object} dbInst - instance of databaseC
-  *  @param  {String} userS - optional user string (email)
-  * @return {array} propDataA - 2D array: name, id, loc, size
-  */
+ * Purpose: Get data from the proposal table
+ *         based upon the name of the user
+ *
+ * @param {object} dbInst - instance of databaseC
+ *  @param  {String} userS - optional user string (email)
+ * @return {array} propDataA - 2D array: name, id, loc, size
+ */
 const logGetProposalData = false;
+
 function getProposalData(dbInst, userS = userEmail) {
   var tableNameS = "proposals";
   var colNameS = "CreatedBy";
@@ -428,14 +431,14 @@ function getProposalData(dbInst, userS = userEmail) {
 }
 
 /** 
-  * Purpose: Get data from the proposal table
-  *         based upon a proposal name, and the name of the user
-  * @param  {String} proposalNameS - a name of a proposal
-  * @param  {String} userS - optional user string (email)
-  * @return {object} pObj - object: name, id, loc, size
-  */
+ * Purpose: Get data from the proposal table
+ *         based upon a proposal name, and the name of the user
+ * @param  {String} proposalNameS - a name of a proposal
+ * @param  {String} userS - optional user string (email)
+ * @return {object} pObj - object: name, id, loc, size
+ */
 
- function getNamedProposalData(dbInst, proposalNameS, userS = userEmail) {
+function getNamedProposalData(dbInst, proposalNameS, userS = userEmail) {
   var fS = "getNamedProposalData";
   try {
     var tableNameS = "proposals";
@@ -466,6 +469,7 @@ function getProposalData(dbInst, userS = userEmail) {
 }
 
 const logWriteProposal = false;
+
 function writeProposal(dbInst, record) {
   var fS = 'writeProposal';
   var colS = "ProposalID,ProposalName,space_identity,TenantName,ProposalSize,CreatedBy,CreatedWhen,ModifiedWhen,ModifiedBy";
@@ -496,7 +500,7 @@ function writeProposal(dbInst, record) {
 /**
  * Purpose: get a list of ProposalNames from proposals table
  *
-* @param  {dbInst} param_name - an array of responses 
+ * @param  {dbInst} param_name - an array of responses 
  * @param  {String} userS - optional user string (email)
  * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
@@ -535,11 +539,13 @@ function matchingBRProposalID(dbInst, propID) {
     var rs = stmt.executeQuery(`SELECT COUNT(*) FROM base_rent where ProposalID = '${propID}';`);
     rs.next()
     var rowCount = rs.getLong(1);
-    if (rowCount == 0) { return false }
+    if (rowCount == 0) {
+      return false
+    }
   } catch (err) {
     var errS = `In ${fS} problem with executing ProposalID = ${propID} query : ${err}`
     Logger.log(errS);
-    throw new Error(errS);  // pass up to calling function
+    throw new Error(errS); // pass up to calling function
   }
   return true
 }
@@ -562,6 +568,7 @@ SET
 
 // eslint-disable-next-line no-unused-vars
 const logSetProposalCurrent = false;
+
 function setProposalCurrent(dbInst, propInst) {
   var fS = "setProposalCurrent";
   try {
@@ -598,7 +605,7 @@ function clientSetProposalCurrent(pnS) {
   var propInst;
   Logger.log(`Getting into clientSetProposalCurrent with ${pnS}`);
   try {
-    dbInst = new databaseC(databaseNameG);
+    dbInst = dbInstG;
     propInst = new proposalC(dbInst, pnS);
     // var pid = propInst.getID();
     var ret = setProposalCurrent(dbInst, propInst);
@@ -623,12 +630,12 @@ function clientSetProposalCurrent(pnS) {
  * @return {boolean[]} [pid, pN] or [false,false]
  */
 
- // eslint-disable-next-line no-unused-vars
- function getCurrentProposal(userS = userEmail) {
+// eslint-disable-next-line no-unused-vars
+function getCurrentProposal(userS = userEmail) {
   const fS = "getCurrentProposal";
-  var dbInst = new databaseC(databaseNameG);
-   var pid = "";
-   var pN = "";
+  const dbInst = dbInstG;
+  var pid = "";
+  var pN = "";
   try {
     const locConn = dbInst.getconn(); // get connection from the instance
 
@@ -643,13 +650,13 @@ function clientSetProposalCurrent(pnS) {
       // column can either be by number or by string 
     }
     if (cntr === 0 || pid === "") {
-        dbInst.getconn().close;
-        throw new Error(`no current proposal`) 
-        }
-    if (cntr > 1) {   
       dbInst.getconn().close;
-      throw new Error(`more than one current proposal`) 
-      }
+      throw new Error(`no current proposal`)
+    }
+    if (cntr > 1) {
+      dbInst.getconn().close;
+      throw new Error(`more than one current proposal`)
+    }
     dbInst.getconn().close;
     return [pid, pN]
 
@@ -725,6 +732,7 @@ function isAlnum_(char) {
     char >= 'a' && char <= 'z' ||
     isDigit_(char);
 }
+
 function isDigit_(char) {
   return char >= '0' && char <= '9';
 }
@@ -803,14 +811,14 @@ function camelArray(headers) {
 
 
 function testMatchingBRProposalID() {
-  var dbInst = new databaseC(databaseNameG);
+  var dbInst = dbInstG;
   var ret = matchingBRProposalID(dbInst, "bb5db7d9-df89-11eb-8b6e-42010a800002");
   console.log(ret)
   dbInst.closeconn();
 }
 
 function testReadFromClauses() {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var tableNameS = "clauses";
   var colNameS = "Section";
   var searchS = "Electric";
@@ -825,7 +833,7 @@ function testReadFromClauses() {
 }
 
 function testReadFromProposals() {
-  var dbInst = new databaseC(databaseNameG);
+  var dbInst = dbInstG;
   var tableNameS = "proposals";
   var colNameS = "CreatedBy";
   var searchS = userEmail;
@@ -919,11 +927,13 @@ function getOpExpData(dbInst, proposalID) {
     while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
       var ansS = results.getString("ProposalAnswer");
       var ckS = results.getString("ProposalClauseKey");
-      var retObj = { 'ck': ckS, 'ans': ansS };
+      var retObj = {
+        'ck': ckS,
+        'ans': ansS
+      };
       resA.push(retObj);
     }
-  }
-  catch (err) {
+  } catch (err) {
     var probS = `In ${fS} error ${err}`;
     Logger.log(probS);
     return false
@@ -961,11 +971,13 @@ function getTIData(dbInst, proposalID) {
     while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
       var ansS = results.getString("ProposalAnswer");
       var ckS = results.getString("ProposalClauseKey")
-      var retObj = { 'ck': ckS, 'ans': ansS };
+      var retObj = {
+        'ck': ckS,
+        'ans': ansS
+      };
       resA.push(retObj);
     }
-  }
-  catch (err) {
+  } catch (err) {
     var probS = `In ${fS} error ${err}`;
     Logger.log(probS);
     return false
@@ -991,11 +1003,11 @@ function clientGetTIData(proposalNameS) {
   disp_clientGetTIData ? Logger.log(`In ${fS} proposalNameS is ${proposalNameS}`) : true;
   var resA = [];
   try {
-    const dbInst = new databaseC(databaseNameG);
+    const dbInst = dbInstG;
     // extract id from name
     var propInst = new proposalC(dbInst, proposalNameS);
     var proposalID = propInst.getID();
-    
+
     const locConn = dbInst.getconn(); // get connection from the instance 
     const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_question WHERE FormName = "Tenant Improvements");`;
     const stmt = locConn.prepareStatement(qryS);
@@ -1005,17 +1017,19 @@ function clientGetTIData(proposalNameS) {
     while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
       var ansS = results.getString("ProposalAnswer");
       var ckS = results.getString("ProposalClauseKey")
-      var retObj = { 'ck': ckS, 'ans': ansS };
+      var retObj = {
+        'ck': ckS,
+        'ans': ansS
+      };
       resA.push(retObj);
     }
-  }
-  catch (err) {
+  } catch (err) {
     var probS = `In ${fS} error ${err}`;
     Logger.log(probS);
     throw new Error(probS)
   }
   var stringR = JSON.stringify(resA);
-  disp_clientGetTIData ?Logger.log(`In ${fS} resA: ${stringR}`) : true;
+  disp_clientGetTIData ? Logger.log(`In ${fS} resA: ${stringR}`) : true;
   return resA
 }
 
@@ -1044,7 +1058,7 @@ function getPropSize(dbInst, propID, userS) {
   }
   return value
 }
- /**
+/**
  * Purpose: client side calls to get readiness information f
  * or a given proposal ID
  * by querying _prop_detail_ based on the id and sub query of ck_question
@@ -1056,39 +1070,42 @@ function getPropSize(dbInst, propID, userS) {
  * [{ 'ans': ProposalAnswer, 'quest': ProposalQuestion, 'sect': section },..]
  * clausekeys and answers
  */
-  const disp_clientGetCDData = false;
-  // eslint-disable-next-line no-unused-vars
-  function clientGetCDData(proposalNameS) {
-    var fS = "clientGetCDData";
-    disp_clientGetCDData ? Logger.log(`In ${fS} proposalNameS is ${proposalNameS}`) : true;
-    var resA = [];
-    try {
-      const dbInst = new databaseC(databaseNameG);
-      // extract id from name
-      // var propInst = new proposalC(dbInst, proposalNameS);
-      // var proposalID = propInst.getID();
-  
-      const locConn = dbInst.getconn(); // get connection from the instance 
-      const qryS = `SELECT ProposalClauseKey, ProposalAnswer, section FROM applesmysql.prop_detail_ex where ProposalName like "${proposalNameS}" 
+const disp_clientGetCDData = false;
+// eslint-disable-next-line no-unused-vars
+function clientGetCDData(proposalNameS) {
+  var fS = "clientGetCDData";
+  disp_clientGetCDData ? Logger.log(`In ${fS} proposalNameS is ${proposalNameS}`) : true;
+  var resA = [];
+  try {
+    const dbInst = dbInstG;
+    // extract id from name
+    // var propInst = new proposalC(dbInst, proposalNameS);
+    // var proposalID = propInst.getID();
+
+    const locConn = dbInst.getconn(); // get connection from the instance 
+    const qryS = `SELECT ProposalClauseKey, ProposalAnswer, section FROM applesmysql.prop_detail_ex where ProposalName like "${proposalNameS}" 
       order by section;`;
-      const stmt = locConn.prepareStatement(qryS);
-      const results = stmt.executeQuery(qryS);
-      Logger.log(`in ${fS}: qry is ${qryS}`);
-      results.beforeFirst(); // reset to beginning
-      while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
-        var ans = results.getString("ProposalAnswer");
-        var ck = results.getString("ProposalClauseKey");
-        var sect = results.getString("section");
-        var retObj = { 'ans': ans, 'clause': ck, "sect": sect };
-        resA.push(retObj);
-      }
+    const stmt = locConn.prepareStatement(qryS);
+    const results = stmt.executeQuery(qryS);
+    Logger.log(`in ${fS}: qry is ${qryS}`);
+    results.beforeFirst(); // reset to beginning
+    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+      var ans = results.getString("ProposalAnswer");
+      var ck = results.getString("ProposalClauseKey");
+      var sect = results.getString("section");
+      var retObj = {
+        'ans': ans,
+        'clause': ck,
+        "sect": sect
+      };
+      resA.push(retObj);
     }
-    catch (err) {
-      var probS = `In ${fS} error ${err}`;
-      Logger.log(probS);
-      throw new Error(probS)
-    }
-    var stringR = JSON.stringify(resA);
-    disp_clientGetCDData ?Logger.log(`In ${fS} resA: ${stringR}`) : true;
-    return resA
- }
+  } catch (err) {
+    var probS = `In ${fS} error ${err}`;
+    Logger.log(probS);
+    throw new Error(probS)
+  }
+  var stringR = JSON.stringify(resA);
+  disp_clientGetCDData ? Logger.log(`In ${fS} resA: ${stringR}`) : true;
+  return resA
+}

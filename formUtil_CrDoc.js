@@ -2,8 +2,8 @@
 runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,
 writeAllQuestionsKeys,
 setOverviewDesc */
-/*global examineForm,databaseC,FormApp,userEmail , getProposalNamesAndIDs,
-cdFormID,cdDropdownID,formList
+/*global examineForm,FormApp,userEmail , getProposalNamesAndIDs,
+cdFormID,cdDropdownID,formList , dbInstG
 */
 
 
@@ -80,7 +80,8 @@ function fillProposalDropdown_(dbInst, formID, dropDownID) {
 }
 
 function runFillProposalDropDown() {
-  var dbInst = new databaseC("applesmysql");
+  // var dbInst = new databaseC("applesmysql");
+  const dbInst = dbInstG;
   var retS = fillProposalDropdown_(dbInst,cdFormID, cdDropdownID);
   console.log(`In runFillProposalDropDown: ${retS}`)
 }

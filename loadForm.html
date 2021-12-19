@@ -28,8 +28,10 @@
  * @param  {String} currentProposalNameS - name string
  * @return {String} retS - return value
  */
-  const disp_loadSelectProposal = false;
+  const disp_loadSelectProposal = true;
   function loadSelectProposal(proposalsA, currentProposalNameS) {
+    const logLoc = disp_loadSelectProposal;
+    logLoc ? console.log(`proposalsA: ${JSON.stringify(proposalsA)}`): true;
     try {
       // get the dropdown
       const sel = document.getElementById("selectProposal");

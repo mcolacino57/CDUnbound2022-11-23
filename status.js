@@ -1,4 +1,4 @@
-/*global databaseC,Logger  */
+/*global Logger , dbInstG  */
 /*exported executeStatus,getCurrPropID_s*/
 //Logger = BetterLog.useSpreadsheet(ssStatus);
 
@@ -52,8 +52,8 @@ that the proposal marked as "current" will be the one of interest
 function extractPropDetail_(propID) {
   var fS = "extractPropDetail_";
   var recA = [];
+  const dbInst = dbInstG;
   try {
-    var dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
     var qryS = `SELECT section,ProposalQuestion,ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
     var stmt = locConn.prepareStatement(qryS);

@@ -2,13 +2,13 @@
  */
 
 /*global  userEmail , logStatusofData, evalProposal , getCKThisForm
-chkMajorPropDetailCategories,getCurrPropID_  , databaseC , 
-UnitTestingApp , databaseNameG , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
+chkMajorPropDetailCategories,getCurrPropID_   , dbInstG ,
+UnitTestingApp  , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
 onHtmlSubmit */
 
 // eslint-disable-next-line no-unused-vars
 function testEvalProposal() {
-  const dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var ret = evalProposal(dbInst);
   console.log(ret);
 }
@@ -16,7 +16,7 @@ function testEvalProposal() {
 
 // eslint-disable-next-line no-unused-vars
 function testHandleTenAndPrem() {
-  const dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   const docInst = new docC(docID, foldID);
   var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
   console.log(ret);
@@ -31,7 +31,7 @@ function testHandleTenAndPrem() {
  * @return {String} retS - return value
  */
 function testGetCKThisForm() {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var retS ="";
   var ret = getCKThisForm(dbInst,"Create Document");
   var l = ret.length;
@@ -44,7 +44,7 @@ function testGetCKThisForm() {
 }
 
 function runTests() {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var userS = userEmail;
   var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();
@@ -60,7 +60,7 @@ function runTests() {
 
 // eslint-disable-next-line no-unused-vars
 function testHandleOver() {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var docInst = new docC(docID, foldID);
   // eslint-disable-next-line no-undef
   var ret = handleOver(dbInst, docInst);
@@ -78,7 +78,7 @@ function testOnHtmlSubmit() {
 
 // eslint-disable-next-line no-unused-vars
 function testHandleExpenses() {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   var docInst = new docC(docID, foldID);
   // eslint-disable-next-line no-undef
   var ret = handleExpenses(dbInst, docInst);
@@ -90,7 +90,7 @@ function testHandleExpenses() {
 
 // eslint-disable-next-line no-unused-vars
 function testHandleBR() {
-    var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
     var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
     var docInst = new docC(docID, foldID);
     // eslint-disable-next-line no-undef
@@ -101,7 +101,7 @@ function testHandleBR() {
 
 // eslint-disable-next-line no-unused-vars
 function testReadInClausesFromTable() {
-  var dbInst = new databaseC(databaseNameG);
+  const dbInst = dbInstG;
   // eslint-disable-next-line no-undef
   var ret = readInClausesFromTable(dbInst);
   console.log(JSON.stringify(ret));
