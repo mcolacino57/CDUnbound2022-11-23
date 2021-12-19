@@ -5,7 +5,7 @@ testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
 docID , foldID */
 
 /*global Utilities , Logger  , databaseC , docC , proposalC,
- getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows ,
+ getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows , BetterLog ,
  getProposalNamesAndIDs , getCurrentProposal , HtmlService , saveAsJSON , readInClausesFromTable */
 // 210727 10:39
 
@@ -15,8 +15,6 @@ const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 // const userEmail = Session.getActiveUser().getEmail();
 const userEmail = "mcolacino@squarefoot.com";
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE'; // Proposal Tempate 1
-
-// const ssLogID = '1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk';   // consolidate spreadsheet--general debug
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q'; // Proposal Generation in MyDrive
 const databaseNameG = "applesmysql";
 
@@ -30,11 +28,11 @@ const clauseKeyObjG = {
   ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
 };
 
-
-
+const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
 // eslint-disable-next-line no-global-assign
-// Logger = BetterLog.useSpreadsheet(ssLogID);
+Logger = BetterLog.useSpreadsheet(ssLogID);
 
+// var dbInstG = new databaseC("applesmysql");
 
 /**
  * Purpose: When using html forms, this function is called by 
@@ -44,11 +42,9 @@ const clauseKeyObjG = {
  * @return {boolean    var probS = `In onSubmit, propblem initializing`;
  } t/f 
  */
-const disp_onHtmlSubmit = true;
+const disp_onHtmlSubmit = false;
 // eslint-disable-next-line no-unused-vars
-function onHtmlSubmit(htmlFormObject = {
-  'val': "unneeded"
-}) {
+function onHtmlSubmit(htmlFormObject = {'val': "unneeded"}) {
   var fS = "onHtmlSubmit";
   var ret;
   //var ck2, pid;
@@ -62,8 +58,9 @@ function onHtmlSubmit(htmlFormObject = {
   } catch (err) {
     var probS = `In ${fS}, problem initializing`;
     Logger.log(probS);
+    return false
+
   }
-  return false
 }
 
 const logEvalProposal = false;
@@ -263,38 +260,50 @@ function handleTI(dbInst, docInst, propSize) {
     // allowance--comes first always
     proposalDetailRows.forEach(pdRow => {
       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-        if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
-          var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
-          // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
-          // which then gets added to tiTerms as the first chunk
-          tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";    
-      } 
+      if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
+        if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+          throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+        }
+        var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
+        // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
+        // which then gets added to tiTerms as the first chunk
+        tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";
+      }
     });
     // work--comes next
     proposalDetailRows.forEach(pdRow => {
       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
       if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
+        if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+          throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+        }
         tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-        console.log(`In llWork: replstruct is ${bestFitRow.replstruct} and clausebody is ${bestFitRow.clausebody} and answer is ${bestFitRow.proposalanswer}`);
+
       }
-      
+
     });
     //additional provisions--after and unordered
     proposalDetailRows.forEach(pdRow => {
       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
       if (bestFitRow) {
         if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
-          tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+          if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+            throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+          }
+            tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+          }
         }
-      }
-    });
+      });
 
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
     if (tiTerms != "") {
       tiTerms = tiTerms.replace(/\n\n$/, '');
     }
-    console.log(`tiTerms: ${tiTerms}`);
-    updateTemplateBody("<<TenantImprovements>>", tiTerms, docInst);
+    const docReplS = "<<TenantImprovements>>";
+    // if (!(docInst.locBody.toString.includes(docReplS))) {
+    //   throw new Error(`document is missing ${docReplS}`);
+    // }
+    updateTemplateBody(docReplS, tiTerms, docInst);
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -344,7 +353,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
     var spA = retA[0]
 
     var pdA = readInClausesFromTable(dbInst);
-    Logger.log(`In ${fS} pdA is ${JSON.stringify(pdA)}`);
+    // Logger.log(`In ${ fS } pdA is ${ JSON.stringify(pdA) }`);
     if (pdA.length === 0) {
       throw new Error(`in ${fS} 0 premises clauses ${propSize}`)
     }
@@ -412,7 +421,7 @@ function handleExpenses(dbInst, docInst, propSize) {
             repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
             ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
             if (!ret) {
-              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
             }
             break;
           case "Electric":
@@ -423,20 +432,20 @@ function handleExpenses(dbInst, docInst, propSize) {
             }
             ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
             if (!ret) {
-              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
             }
             break;
           case "RealEstateTaxes":
             retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
             ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
             if (!ret) {
-              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
             }
         }
       }
     });
   } catch (err) {
-    probS = `In ${fS}: ${err}`
+    probS = `In ${fS}: ${err} `
     Logger.log(probS);
     return false
   }
@@ -484,7 +493,7 @@ function matchProposalSizeWithClause(propSize, ck, pdr) {
 
   } // end try
   catch (err) {
-    const probS = `In ${fS}: ${err}`;
+    const probS = `In ${fS}: ${err} `;
     Logger.log(probS);
   }
   // if we haven't returned above it measn that we didn't find any matches
@@ -524,7 +533,7 @@ function handleOver(dbInst, docInst, propSize) {
         repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
         ret = updateTemplateBody(bestFit.replstruct, repClauseS, docInst);
         if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS}`)
+          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
         }
       }
     });
@@ -539,23 +548,23 @@ function handleOver(dbInst, docInst, propSize) {
         if (bestFit.proposalclausekey === "commDate") {
           // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
           var dA = bestFit.proposalanswer.split('-');
-          repS = `${dA[1]}/${dA[2]}/${dA[0]}`;
+          repS = `${dA[1]} /${dA[2]}/${dA[0]} `;
         } else {
           repS = bestFit.proposalanswer;
         }
         ret = updateTemplateBody(bestFit.replstruct, repS, docInst);
         if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+          throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
         }
       }
     });
 
     ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
     if (!ret) {
-      throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret}`)
+      throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
     }
   } catch (err) {
-    probS = `In ${fS}: ${err}`
+    probS = `In ${fS}: ${err} `
     Logger.log(probS);
     return false
   }
@@ -577,7 +586,7 @@ function updateTemplateBody(replStructure, replText, docInst) {
   try {
     docInst.locBody.replaceText(replStructure, replText);
   } catch (err) {
-    var probS = `In ${fS}: unable to update ${replStructure}`;
+    var probS = `In ${fS}: unable to update ${replStructure} `;
     throw new Error(probS)
   }
   return true
@@ -624,15 +633,15 @@ function chkMajorPropDetailCategories(propID) {
       "Use"
     ];
     sectionSA.forEach((s) => {
-      qryS = `SELECT * FROM prop_detail_ex where ProposalID = '${propID}' AND section = '${s}';`;
+      qryS = `SELECT * FROM prop_detail_ex where ProposalID = '${propID}' AND section = '${s}'; `;
       results = stmt.executeQuery(qryS);
       results.next() ? incSec.push(s) : excSec.push(s);
     });
     // excSec.length==0 ? excSec =["none"] : true;
-    logChkMajorPropDetailCategories ? Logger.log(`in: ${incSec} missing: ${excSec}`) : true;
+    logChkMajorPropDetailCategories ? Logger.log(`in: ${incSec} missing: ${excSec} `) : true;
     return [incSec, excSec, excSec.length]
   } catch (err) {
-    Logger.log(`In ${fS}: ${err}`);
+    Logger.log(`In ${fS}: ${err} `);
     return false
   }
 }
@@ -654,7 +663,7 @@ function logStatusofData(propID) {
     return true
   } else {
     excSec.forEach((sec) => {
-      Logger.log(`In ${fS} missing sections: ${sec}`);
+      Logger.log(`In ${fS} missing sections: ${sec} `);
     });
     return false
   }
@@ -698,14 +707,14 @@ function doGet(request) {
   var propA = [];
   // gets a list that looks like [ [name, id],...] - propA
   propA = getProposalNamesAndIDs(dbInst, userEmail);
-  Logger.log(`In doGet: ${propA}`);
+  Logger.log(`In doGet: ${propA} `);
   for (var i in propA) {
     ddvaluesA.push({
-      proposal: `${propA[i][0]}`
+      proposal: `${propA[i][0]} `
     }); // create dropdown array
   }
   var pN = getCurrentProposal(userEmail)[1];
-  Logger.log(`ddvalues: ${JSON.stringify(ddvaluesA)}`);
+  Logger.log(`ddvalues: ${JSON.stringify(ddvaluesA)} `);
   var html = HtmlService.createTemplateFromFile('indexCD');
   html.proposals = JSON.stringify(ddvaluesA); // move to client side
   html.currProposal = pN;
@@ -767,6 +776,6 @@ const log_xfHtmlObj = false;
 function xfHtmlObj(htmlFormObject) {
   var fS = "xfHtmlObj";
 
-  log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)}`) : true;
+  log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)} `) : true;
   return htmlFormObject;
 }

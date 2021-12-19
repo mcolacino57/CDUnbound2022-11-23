@@ -1,4 +1,4 @@
-/*global databaseC,Logger*/
+/*global databaseC,Logger  */
 /*exported executeStatus,getCurrPropID_s*/
 //Logger = BetterLog.useSpreadsheet(ssStatus);
 

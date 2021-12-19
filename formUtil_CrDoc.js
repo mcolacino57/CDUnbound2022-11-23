@@ -2,7 +2,7 @@
 runFillProposalDropDown, testFillSpacesDropdown,testPrintTitlesAndIDs,
 writeAllQuestionsKeys,
 setOverviewDesc */
-/*global examineForm,databaseC,FormApp,userEmail , getProposalNamesAndIDs, 
+/*global examineForm,databaseC,FormApp,userEmail , getProposalNamesAndIDs,
 cdFormID,cdDropdownID,formList
 */
 

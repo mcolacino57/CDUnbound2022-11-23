@@ -1,5 +1,5 @@
 /*global databaseNameG , databaseC , Logger , userEmail , SpreadsheetApp , 
-getCKThisForm , proposalC , BetterLog
+getCKThisForm , proposalC 
 */
 /* exported readInListFromTable, , writeToTable , 
 getProposalData , getProposalNamesAndIDs , getProposalNames , getAddressSuiteFloorSF,
@@ -7,9 +7,9 @@ getSpaceDisplay,getNamedProposalData,writePropDetail,writeProposal,
 setProposalCurrent,getCurrentProposal,objectToArray,rangeToObjects,testMatchingBRProposalID,
 testReadFromClauses,testReadFromProposals*/
 
-const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
+//const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
 // eslint-disable-next-line no-global-assign
-Logger = BetterLog.useSpreadsheet(ssLogID);
+// Logger = BetterLog.useSpreadsheet(ssLogID);
 // eslint-disable-next-line no-unused-vars
 function testclientSetProposalCurrent() {
   var pnS = "Club Med at 25th-1";

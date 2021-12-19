@@ -1,8 +1,7 @@
 <script>
   window.addEventListener("load", function () {
-    // get current proposal name string
-    console.log('just before get currProposal')
     showSpinner();
+    // get current proposal name string
     try {
       var currentProposalNameS = document.getElementById("currProposal").innerText;
     } catch (err) { throw new Error(`can't find currProposal: ${err}`) }
@@ -11,11 +10,14 @@
     // loaded into proposals by doGet in poCode
     var proposalsLoc = document.getElementById("proposals").innerText;
     var proposalsA = JSON.parse(proposalsLoc);
+    proposalsA.sort((a, b) => (a.proposal > b.proposal ? 1 : -1));
+
+    // populate the proposal selector dropdown
     var ret = loadSelectProposal(proposalsA, currentProposalNameS);
     if (!ret) throw new Error(`problem with loadSelectProposal for ${currentProposalNameS}`)
     // any data for this proposal? 
     ret = chkPropDetail(currentProposalNameS);
-    
+
   });
 
   /**
@@ -26,7 +28,7 @@
  * @param  {String} currentProposalNameS - name string
  * @return {String} retS - return value
  */
-
+  const disp_loadSelectProposal = false;
   function loadSelectProposal(proposalsA, currentProposalNameS) {
     try {
       // get the dropdown
@@ -43,7 +45,7 @@
         option.value = propNS;
         // if current proposal, mark it to set selectedIndex below
         if (propNS === currentProposalNameS) {
-          console.log(`Recognized proposal name ${propNS}`);
+          logLoc ? console.log(`Recognized proposal name ${propNS}`) : true;
           var selI = i;
         }
         //Add the Option element to spaceSelect.
@@ -58,9 +60,35 @@
     return true
   }
 
+  /**
+   * Purpose: 1) constructs list of all id's on the form -> idList
+   *          2) calls google.script run on clientGetOverviewData 
+   *             with success handler getOverviewSuccess
+   *          3) passes idList to the success function
+   *          4) calls failure handler if an issue occurs
+   *
+   * @param  {String} currentProposalNameS - current proposal
+   * @return {String} retS - return value
+   */
+
+  const disp_chkPropDetail = false;
   function chkPropDetail(currentProposalNameS) {
     const fS = "chkPropDetail";
-    console.log(`in ${fS}: proposalNameS is ${currentProposalNameS}`); 
+    const logLoc = disp_chkPropDetail;
+    try {
+      // get all of the ids
+      var idA = document.querySelectorAll('*[id]');
+      var idList = [];
+      idA.forEach((value, key) => {
+        var nme = value.name;
+        logLoc ? console.log(`value: ${nme}`) : true;
+        if (value.name) idList.push(nme);
+      });
+    } catch (err) {
+      const probS = `In ${fS}: ${err} occurred`;
+      console.log(probS);
+      throw new Error(probS);
+    }
     google.script.run.
       withSuccessHandler(createTable).
       withFailureHandler(onCPDFailure).

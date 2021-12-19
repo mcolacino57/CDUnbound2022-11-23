@@ -1,32 +1,104 @@
-/*global getPropSize,getProposalNamesAndIDs,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities*/
-/*exported proposalC,formClauseC,brokerC,docC,questionC,responseC,databaseC */
+/*global getPropSize,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Utilities ,
+getProposalNamesAndIDs , Logger  , Jdbc*/
+/*exported proposalC,formClauseC,brokerC,docC,questionC,responseC,databaseC, propListC , fieldsC*/
 /*********************proposal class ******************************** */
-class proposalC {
-  constructor(dbInst,propName){
-    var allPropsA = getProposalNamesAndIDs(dbInst,userEmail);
-    this.prop = allPropsA.filter((p)=> {
-      return p[0]==propName  // returns array with propName and propID
-    })[0];
-    this.name =this.prop[0];
-    this.id = this.prop[1];
-    this.size = getPropSize(dbInst, this.id,userEmail);
-    // this.loc = getPropLoc(this.propID);
+
+
+class fieldsC {
+  constructor(dbInst, htmlFormObject) {
+    const fS = "field string constructor";
+    try {
+      var retS = "'";
+      var ckA = Object.keys(htmlFormObject); // all clauseKeys from form
+      //strip out htmlFormObject values that aren't clauseKeys; this will change if more
+      //fields are added to the form that aren't clauseKeys
+      ckA = ckA.filter(item => item !== "selectProposal");
+
+      var l = ckA.length;
+      for (var j = 0; j < l - 1; j++) {
+        retS = retS + (ckA[j] + "', '");
+      }
+      retS = retS + (ckA[l - 1] + "'");
+    } catch (err) {
+      const probS = `In ${fS} ${err}`;
+      throw new Error(probS);
+    }
+    // Logger.log(`In ${fS}: retS is ${retS}`);
+    this.fieldString = retS;
   }
-  getName(){
+
+  getFieldString() {
+    return this.fieldString
+  }
+
+}
+
+class proposalC {
+  constructor(dbInst, propName) {
+    this.allPropsA = getProposalNamesAndIDs(dbInst, userEmail);
+    this.prop = this.allPropsA.filter((p) => {
+      return p[0] == propName // returns array with propName and propID
+    })[0];
+    this.name = this.prop[0];
+    this.id = this.prop[1];
+    this.size = getPropSize(dbInst, this.id, userEmail);
+  }
+  getName() {
     return this.name
   }
-  getID(){
+  getID() {
     return this.id
   }
   getSize() {
     return this.size
   }
-  //getLoc() {
-    //return this.loc
- // }
+}
 
+// Contains an updated list of proposals (ids and names) and also the
+// current proposal
+class propListC {
+  constructor(dbInst) {
+    this.propNIDA = getProposalNamesAndIDs(dbInst, userEmail);
+    for (var i = 0; i < this.propNIDA.length; i++) {
+      if (this.propNIDA[i][2] == 1) {
+        this.currID = this.propNIDA[i][1]
+      }
+    }
+    // this.currID = getCurrentProposal(dbInst,userEmail)[0];
   }
-  /*****************clause class ************************************ */
+  getPropNIDA() {
+    return this.propNIDA
+  }
+  // for testing purposes
+  getIndexed(idx) {
+    return this.propNIDA[idx]
+  }
+  getIDfromName(propNameS) {
+    for (var i = 0; i < this.propNIDA.length; i++) {
+      if (this.propNIDA[i][0] == propNameS) return this.propNIDA[i][1]
+    }
+    return false
+  }
+  getNamefromID(propID) {
+    for (var i = 0; i < this.propNIDA.length; i++) {
+      if (this.propNIDA[i][1] == propID) return this.propNIDA[i][0]
+    }
+    return false //   this.name = this.allPropsNameIDA.filter( p => {
+    //     if (p[1] == propID) return p[0]
+    //   });
+  }
+  addNameID(nameIDA) {
+    nameIDA.forEach(e => this.propNIDA.push(e))
+    return this.propNIDA
+  }
+  setCurr(id) {
+    this.currID = id
+  }
+  getCurr() {
+    return this.currID
+  }
+}
+/*****************clause class ************************************ */
 
 class clauseC {
   constructor(canonName, geo) {
@@ -34,22 +106,40 @@ class clauseC {
     this.geo = geo; // String, for example "New York" or "National";
     this.section = this.name; // override below
   }
-  setGeo(geo) { this.geo = geo }
-  setFormSelector(formSelector) { this.formSelector = formSelector }
-  setAtSelector(atSelector) { this.atSelector = atSelector }
-  setSection(section) { this.section = section }
+  setGeo(geo) {
+    this.geo = geo
+  }
+  setFormSelector(formSelector) {
+    this.formSelector = formSelector
+  }
+  setAtSelector(atSelector) {
+    this.atSelector = atSelector
+  }
+  setSection(section) {
+    this.section = section
+  }
 
-  getName() { return this.name }
-  getGeo() { return this.geo }
-  getFormSelector() { return this.formSelector }
-  getAtSelector() { return this.atSelector }
-  getSection() { return this.section }
+  getName() {
+    return this.name
+  }
+  getGeo() {
+    return this.geo
+  }
+  getFormSelector() {
+    return this.formSelector
+  }
+  getAtSelector() {
+    return this.atSelector
+  }
+  getSection() {
+    return this.section
+  }
 }
 
 /***************** form class ************************************ */
 
 /* This class is essentially a clause and the form selector used to define the clause. There will also be an atSelector class which will get used when the clause is defined in an DB database rather than in a (user-chosen) set of form responses.
-*/
+ */
 class formClauseC extends clauseC {
   constructor(canonName, geo, form, questionArr) {
     super(canonName, geo);
@@ -57,14 +147,22 @@ class formClauseC extends clauseC {
     this.questionArr = questionArr;
     this.qArrLen = this.questionArr.length;
   }
-  getQarrLen() { return this.qArrLen }
-  getQarr() { return this.questionArr }
-  getForm() { return this.form }
-  getName() { return this.name }
+  getQarrLen() {
+    return this.qArrLen
+  }
+  getQarr() {
+    return this.questionArr
+  }
+  getForm() {
+    return this.form
+  }
+  getName() {
+    return this.name
+  }
   getItemIDs() {
     var items = this.form.getItems();
     for (var i in items) {
-      console.log(items[i].getTitle() + ': ' + items[i].getId());
+      console.log("In getItemIDs: " + items[i].getTitle() + ': ' + items[i].getId());
     }
   }
 }
@@ -79,9 +177,11 @@ class personC {
     this.company = company;
     this.contactemail = contactemail;
     this.contactaddress = contactaddress;
-    this.persontype = "PERSON";  // default for person
+    this.persontype = "PERSON"; // default for person
   }
-  set perType(type) { this.persontype = type }
+  set perType(type) {
+    this.persontype = type
+  }
 }
 /* Class to wrap up a broker */
 class brokerC extends personC {
@@ -94,7 +194,7 @@ class brokerC extends personC {
     //super(contactemail);
     //super(contactaddress);
     this.id = id;
-    this.persontype = "BROKER"  // default for broker
+    this.persontype = "BROKER" // default for broker
   }
 
   setReptList(reptA) {
@@ -102,8 +202,7 @@ class brokerC extends personC {
       this.replacename = reptA[0];
       this.replacecompany = reptA[1];
       this.replaceaddress = reptA[2];
-    }
-    else {
+    } else {
       this.replacename = "<<ListingBrokerName>>"; // replacement defaults
       this.replacecompany = "<<ListingBrokerCompanyName>>";
       this.replaceaddress = "<<ListingBrokerAddress>>";
@@ -119,7 +218,7 @@ class brokerC extends personC {
 /***************** doc class ************************************ */
 
 class docC {
-  constructor(docID,foldID) {
+  constructor(docID, foldID) {
     this.file = DriveApp.getFileById(docID);
     this.folder = DriveApp.getFolderById(foldID);
     this.docName = this.file.getName();
@@ -130,7 +229,9 @@ class docC {
     this.locBody = this.locDocument.getBody();
   }
 
-  getBodyText() { return this.locBody.getText() }
+  getBodyText() {
+    return this.locBody.getText()
+  }
 
   saveAndCloseTemplate() {
 
@@ -153,13 +254,13 @@ class questionC {
 
 class responseC {
   constructor(form) {
-    this.resps = getItemResps(form);  // get all responses to the form; loop array of questions
+    this.resps = getItemResps(form); // get all responses to the form; loop array of questions
   }
   matchResponse(questionObj) {
     var keyA = Object.keys(questionObj);
     var valA = Object.values(questionObj);
     for (var j = 0; j < keyA.length; j++) {
-      var answerS = getAnswerWithMap(valA[j], this.resps);  // Question match with a response? continue if not
+      var answerS = getAnswerWithMap(valA[j], this.resps); // Question match with a response? continue if not
       if (answerS != "Not Found") {
         return keyA[j];
       }
@@ -170,10 +271,19 @@ class responseC {
     return this.resps
   }
 }
-
 class databaseC {
   constructor(dbS) {
+    this.root = 'root';
+    this.rootPwd = 'lew_FEEB@trit3auch';
     this.db = dbS; // name of the database
+
+    if (dbS == "applesmysql_loc") {
+      this.conn = Jdbc.getConnection('jdbc:mysql://localhost:3306/' + this.db, {
+        user: this.root,
+        password: this.rootPWD
+      });
+      return;
+    }
     this.connectionName = 'fleet-breaker-311114:us-central1:applesmysql';
     this.root = 'root';
     this.rootPwd = 'lew_FEEB@trit3auch';
@@ -182,9 +292,11 @@ class databaseC {
     this.instanceUrl = 'jdbc:google:mysql://' + this.connectionName;
     this.dbUrl = this.instanceUrl + '/' + this.db;
     this.connectParam = `dbUrl: ${this.dbUrl} user: ${this.user} and ${this.userPwd}`;
+    // console.log("Inside databaseC " + this.connectParam);
     this.conn = Jdbc.getCloudSqlConnection(this.dbUrl, this.user, this.userPwd);
-    this.colA = [];
+
   }
+
   getdbUrl() {
     return this.dbUrl;
   }
@@ -195,24 +307,25 @@ class databaseC {
     return this.conn
   }
   getcolumns(tableNameS) {
-    var qryS = `SHOW COLUMNS FROM ${tableNameS};`
     try {
+      var qryS = `SHOW COLUMNS FROM ${tableNameS};`
+      var colA = [];
       var stmt = this.conn.createStatement();
       var cols = stmt.executeQuery(qryS);
-      this.colA = [];
       while (cols.next()) {
-        this.colA.push(cols.getString(1));
+        colA.push(cols.getString(1));
       }
     } catch (err) {
-      console.log(`In method getcolumns problem with executing query : ${err}`);
+      Logger.log(`In method getcolumns problem with executing query : ${err}`);
     }
-    return (this.colA)
+    return (colA)
   }
   closeconn() {
     if (this.conn != null) this.conn.close();
 
   }
 }
+
 function formatCurrentDate() {
   return Utilities.formatDate(new Date(), "GMT+1", "yyyyMMdd");
 }
