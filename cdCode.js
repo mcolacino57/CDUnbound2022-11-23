@@ -1,12 +1,11 @@
 /*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
 testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
 testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
-testHandleBR*/
+testHandleBR */
 
 /*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
  getCurrPropID_,readFromTable,DriveApp,readInListFromTable,
  UnitTestingApp,maxRows*/
-// 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
 const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
@@ -18,12 +17,9 @@ const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q';               // Proposal Ge
 
 /************** clauseKey strings object ***********************/
 
-clauseKeyObjG = {
+const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')"
-
 };
-
-
 
 // eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
@@ -32,7 +28,6 @@ function onSubmit() {
   var ret = evalProposal();
   return ret
 }
-
 
 const logEvalProposal = false;
 /**
