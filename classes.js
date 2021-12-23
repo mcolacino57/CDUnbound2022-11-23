@@ -1,22 +1,93 @@
-/*global getProposalNamesAndIDs,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities*/
-/*exported proposalC,formClauseC,brokerC,docC,questionC,responseC,databaseC *//*********************proposal class ******************************** */
-class proposalC {
-  constructor(dbInst,propName){
-    var allPropsA = getProposalNamesAndIDs(dbInst,userEmail);
-    this.prop = allPropsA.filter((p)=> {
-      return p[0]==propName  // returns array with propName and propID
-    })[0];
-    this.propName=this.prop[0];
-    this.propID=this.prop[1];
+/* eslint-disable no-unused-vars */
+/*global Logger, getPropSize,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities ,
+getProposalNamesAndIDs  */
+/*exported ckStringC, proposalC,brokerC,docC,responseC,databaseC, propListC */
+
+class ckStringC {
+  constructor(dbInst,htmlFormObject) {
+      const fS = "clause key string constructor";
+      try {
+        var retS = "'";
+        var ckA = Object.keys(htmlFormObject); // all clauseKeys from form
+        //strip out htmlFormObject values that aren't clauseKeys; this will change if more
+        //fields are added to the form that aren't clauseKeys
+        ckA = ckA.filter(item => item !== "selectProposal");
+    
+        var l = ckA.length;
+        for (var j = 0; j < l - 1; j++) {
+          retS = retS + (ckA[j] + "', '");
+        }
+        retS = retS + (ckA[l - 1]+"'");
+      } catch (err) {
+        const probS = `In ${fS} ${err}`;
+        throw new Error(probS);
+      }
+      // Logger.log(`In ${fS}: retS is ${retS}`);
+      this.ckString = retS;
   }
-  getpropName(){
-    return this.propName
-  }
-  getpropID(){
-    return this.propID
+  
+  getCKString() {
+    return this.ckString
   }
 
   }
+
+class proposalC {
+  constructor(dbInst, propName) {
+    this.allPropsA = getProposalNamesAndIDs(dbInst, userEmail);
+    this.prop = this.allPropsA.filter((p) => {
+      return p[0] == propName  // returns array with propName and propID
+    })[0];
+    this.name = this.prop[0];
+    this.id = this.prop[1];
+    this.size = getPropSize(dbInst, this.id, userEmail);
+  }
+  getName() {
+    return this.name
+  }
+  getID() {
+    return this.id
+  }
+  getSize() {
+    return this.size
+  }
+}
+
+// Contains an updated list of proposals (ids and names) and also the
+// current proposal
+class propListC {
+  constructor(dbInst) {
+    this.propNIDA = getProposalNamesAndIDs(dbInst, userEmail);
+    for (var i = 0; i < this.propNIDA.length; i++) {
+      if(this.propNIDA[i][2]==1){ this.currID = this.propNIDA[i][1]}
+    }
+  }
+  getPropNIDA() { return this.propNIDA }
+  // for testing purposes
+  getIndexed(idx) {
+    return this.propNIDA[idx]
+  }
+  getIDfromName(propNameS) {
+    for (var i = 0; i < this.propNIDA.length; i++) {
+      if (this.propNIDA[i][0] == propNameS) return this.propNIDA[i][1]
+    }
+    return false
+  }
+  getNamefromID(propID) {
+    for (var i = 0; i < this.propNIDA.length; i++) {
+      if (this.propNIDA[i][1] == propID) return this.propNIDA[i][0]
+    }
+    return false  //   this.name = this.allPropsNameIDA.filter( p => {
+    //     if (p[1] == propID) return p[0]
+    //   });
+  }
+  addNameID(nameIDA) {
+    nameIDA.forEach(e => this.propNIDA.push(e))
+    return this.propNIDA
+  }
+  setCurr(id) { this.currID = id }
+  getCurr() { return this.currID }
+}
   /*****************clause class ************************************ */
 
 class clauseC {
@@ -35,29 +106,6 @@ class clauseC {
   getFormSelector() { return this.formSelector }
   getAtSelector() { return this.atSelector }
   getSection() { return this.section }
-}
-
-/***************** form class ************************************ */
-
-/* This class is essentially a clause and the form selector used to define the clause. There will also be an atSelector class which will get used when the clause is defined in an DB database rather than in a (user-chosen) set of form responses.
-*/
-class formClauseC extends clauseC {
-  constructor(canonName, geo, form, questionArr) {
-    super(canonName, geo);
-    this.form = form;
-    this.questionArr = questionArr;
-    this.qArrLen = this.questionArr.length;
-  }
-  getQarrLen() { return this.qArrLen }
-  getQarr() { return this.questionArr }
-  getForm() { return this.form }
-  getName() { return this.name }
-  getItemIDs() {
-    var items = this.form.getItems();
-    for (var i in items) {
-      console.log(items[i].getTitle() + ': ' + items[i].getId());
-    }
-  }
 }
 
 /*****************people classes ************************************ */
@@ -110,7 +158,7 @@ class brokerC extends personC {
 /***************** doc class ************************************ */
 
 class docC {
-  constructor(docID,foldID) {
+  constructor(docID, foldID) {
     this.file = DriveApp.getFileById(docID);
     this.folder = DriveApp.getFolderById(foldID);
     this.docName = this.file.getName();
@@ -130,8 +178,6 @@ class docC {
 
 }
 
-/************** form class**********************/
-
 // class holding question arrays and section titles
 class questionC {
   constructor(questionA, sectionS) {
@@ -140,31 +186,17 @@ class questionC {
   }
 }
 
-/************** responseC class ******************/
-
-class responseC {
-  constructor(form) {
-    this.resps = getItemResps(form);  // get all responses to the form; loop array of questions
-  }
-  matchResponse(questionObj) {
-    var keyA = Object.keys(questionObj);
-    var valA = Object.values(questionObj);
-    for (var j = 0; j < keyA.length; j++) {
-      var answerS = getAnswerWithMap(valA[j], this.resps);  // Question match with a response? continue if not
-      if (answerS != "Not Found") {
-        return keyA[j];
-      }
-    }
-    return "Not Found"
-  }
-  getResps() {
-    return this.resps
-  }
-}
-
 class databaseC {
   constructor(dbS) {
+    this.root = 'root';
+    this.rootPwd = 'lew_FEEB@trit3auch';
     this.db = dbS; // name of the database
+
+    if (dbS == "applesmysql_loc") {
+    this.conn = Jdbc.getConnection('jdbc:mysql://localhost:3306/' + this.db,
+      { user: this.root, password: this.rootPWD });
+      return;
+    }
     this.connectionName = 'fleet-breaker-311114:us-central1:applesmysql';
     this.root = 'root';
     this.rootPwd = 'lew_FEEB@trit3auch';
@@ -175,8 +207,9 @@ class databaseC {
     this.connectParam = `dbUrl: ${this.dbUrl} user: ${this.user} and ${this.userPwd}`;
     // console.log("Inside databaseC " + this.connectParam);
     this.conn = Jdbc.getCloudSqlConnection(this.dbUrl, this.user, this.userPwd);
-    this.colA = [];
+  
   }
+
   getdbUrl() {
     return this.dbUrl;
   }
@@ -187,18 +220,18 @@ class databaseC {
     return this.conn
   }
   getcolumns(tableNameS) {
-    var qryS = `SHOW COLUMNS FROM ${tableNameS};`
     try {
+    var qryS = `SHOW COLUMNS FROM ${tableNameS};`
+      var colA=[];
       var stmt = this.conn.createStatement();
       var cols = stmt.executeQuery(qryS);
-      this.colA = [];
       while (cols.next()) {
-        this.colA.push(cols.getString(1));
+        colA.push(cols.getString(1));
       }
     } catch (err) {
-      console.log(`In method getcolumns problem with executing query : ${err}`);
+      Logger.log(`In method getcolumns problem with executing query : ${err}`);
     }
-    return (this.colA)
+    return (colA)
   }
   closeconn() {
     if (this.conn != null) this.conn.close();
