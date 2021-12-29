@@ -1,12 +1,12 @@
 /*exported testIncPropName , runTests , testEvalResponses,
-testProposalNameYN,  onSubmit , testGetNamedProposalData, testQuestionToClauseKey ,
+testProposalNameYN,  onSubmit , testGetNamedProposalData ,
 testGetProposalData , testPrintTitlesAndIDs , todayS , nowS , 
 testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
-docID , foldID */
+docID , foldID , propListInstG*/
 
 /*global Utilities , Logger  , databaseC , docC , proposalC,
  getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows , BetterLog ,
- getProposalNamesAndIDs , getCurrentProposal , HtmlService , saveAsJSON , readInClausesFromTable */
+ HtmlService , saveAsJSON , readInClausesFromTable , propListC */
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -18,10 +18,12 @@ const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE'; // Proposal Tempat
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q'; // Proposal Generation in MyDrive
 const databaseNameG = "applesmysql";
 const dbInstG = new databaseC(databaseNameG);
+const propListInstG = new propListC(dbInstG);
+
 
 
 /************** clauseKey strings object ***********************/
-/* UPDATE  these when form is modified especially when new questions/clauses/clauseKeys are added */
+/* UPDATE  these when form is modified especially when new clauses/clauseKeys are added */
 const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
   security: "('secDeposit')",
@@ -673,9 +675,7 @@ function logStatusofData(propID) {
 
 }
 
-
-
-
+const disp_doGet = false;
 
 
 /************************Utilities *********************** */
@@ -705,23 +705,29 @@ function sortDate(r1, r2) {
 // eslint-disable-next-line no-unused-vars
 function doGet(request) {
   // const dbInst = new databaseC(databaseNameG);
-  const dbInst = dbInstG;
+  const propListInst = propListInstG;
+
   // eslint-disable-next-line no-undef
   var ddvaluesA = []; // values for proposal dd (dropdown)
-  var propA = [];
+  var propA = [],
+    pid, pNS;
   // gets a list that looks like [ [name, id],...] - propA
-  propA = getProposalNamesAndIDs(dbInst, userEmail);
-  Logger.log(`In doGet: ${JSON.stringify(propA)} `);
+  propA = propListInst.getPropNIDA();
+  disp_doGet ? Logger.log(`In doGet: ${propA}`) : true;
+  Logger.log(`In doGet propA: ${propA}`);
   for (var i in propA) {
     ddvaluesA.push({
-      proposal: `${propA[i][0]} `
+      proposal: `${propA[i][0]}`
     }); // create dropdown array
   }
-  var pN = getCurrentProposal(userEmail)[1];
-  Logger.log(`ddvalues: ${JSON.stringify(ddvaluesA)} `);
+  pid = propListInst.getCurr();
+  // Logger.log(`in doGet pid is ${pid}`);
+  pNS = propListInst.getNamefromID(pid);
+  // Logger.log(`in doGet pNS is ${pNS}`);
+
   var html = HtmlService.createTemplateFromFile('indexCD');
   html.proposals = JSON.stringify(ddvaluesA); // move to client side
-  html.currProposal = pN;
+  html.currProposal = pNS;
   var htmlOutput = html.evaluate();
   return htmlOutput
 }

@@ -55,7 +55,7 @@ function extractPropDetail_(propID) {
   const dbInst = dbInstG;
   try {
     var locConn = dbInst.getconn(); // get connection from the instance
-    var qryS = `SELECT section,ProposalQuestion,ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
+    var qryS = `SELECT section , ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
     var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();

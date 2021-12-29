@@ -47,7 +47,7 @@
         option.value = propNS;
         // if current proposal, mark it to set selectedIndex below
         if (propNS === currentProposalNameS) {
-          logLoc ? console.log(`Recognized proposal name ${propNS}`) : true;
+          //console.log(`Recognized proposal name ${propNS}`);
           var selI = i;
         }
         //Add the Option element to spaceSelect.
@@ -62,28 +62,14 @@
     return true
   }
 
-  /**
-   * Purpose: 1) constructs list of all id's on the form -> idList
-   *          2) calls google.script run on clientGetOverviewData 
-   *             with success handler getOverviewSuccess
-   *          3) passes idList to the success function
-   *          4) calls failure handler if an issue occurs
-   *
-   * @param  {String} currentProposalNameS - current proposal
-   * @return {String} retS - return value
-   */
-
-  const disp_chkPropDetail = false;
   function chkPropDetail(currentProposalNameS) {
     const fS = "chkPropDetail";
-    const logLoc = disp_chkPropDetail;
     try {
       // get all of the ids
       var idA = document.querySelectorAll('*[id]');
       var idList = [];
       idA.forEach((value, key) => {
         var nme = value.name;
-        logLoc ? console.log(`value: ${nme}`) : true;
         if (value.name) idList.push(nme);
       });
     } catch (err) {
@@ -95,6 +81,8 @@
       withSuccessHandler(createTable).
       withFailureHandler(onCPDFailure).
       clientGetCDData(currentProposalNameS); // change for each form ; gcloudSQL
+    return true
+
   }
 
   /*
@@ -143,13 +131,5 @@
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
-    // var currentProposalNameS = document.getElementById("currProposal").innerText;
-    // google.script.run.
-    //   withSuccessHandler(createTable).
-    //   withFailureHandler(onCPDFailure).
-    //   clientGetCDData(currentProposalNameS); 
   }, false);
-
-  
-  
 </script>

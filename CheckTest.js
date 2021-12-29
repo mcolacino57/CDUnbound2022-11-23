@@ -13,7 +13,6 @@ function testEvalProposal() {
   console.log(ret);
 }
 
-
 // eslint-disable-next-line no-unused-vars
 function testHandleTenAndPrem() {
   const dbInst = dbInstG;
@@ -21,7 +20,6 @@ function testHandleTenAndPrem() {
   var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
   console.log(ret);
 }
-
 
 /**
  * Purpose: Get all the clauseKeys in this form

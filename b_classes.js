@@ -59,6 +59,7 @@ class propListC {
   constructor(dbInst) {
     this.propNIDA = getProposalNamesAndIDs(dbInst, userEmail);
     for (var i = 0; i < this.propNIDA.length; i++) {
+      //Logger.log(`in propListC constructor: ${JSON.stringify(this.propNIDA[i])}`);
       if(this.propNIDA[i][2]==1){ this.currID = this.propNIDA[i][1]}
     }
   }
@@ -176,14 +177,6 @@ class docC {
     this.locDocument.saveAndClose();
   }
 
-}
-
-// class holding question arrays and section titles
-class questionC {
-  constructor(questionA, sectionS) {
-    this.questionA = questionA;
-    this.sectionS = sectionS;
-  }
 }
 
 class databaseC {

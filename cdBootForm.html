@@ -10,7 +10,6 @@
   }
   window.addEventListener('load', preventFormSubmit);
 
-
   /**
    * Purpose: go to server side and process the form using processForm
    * processForm cod is in poCode.js
@@ -18,23 +17,16 @@
    * @param  {object} formObject 
    * @return {boolean} ret - return value
    */
-
   function handleFormSubmit(formObject) {
     var outcomeS;
     showSpinner();
-
     google.script.run.
       withSuccessHandler(showSuccessModal).
       withFailureHandler(showFailureModal).
       processForm(formObject);
-    // processForm in tiCode
-    // clean up after form has been processed
-    // document.getElementById("tiForm").reset();
+      
     document.getElementById("subBtn").blur();
-    // if processForm didn't return clean, alert and return false
   
-    // if processForm returns ok, check rent inclusion number value, 
-    // if empty or improper format, alert and return
     return true
   }
 

@@ -1,21 +1,11 @@
 /*global  Logger , userEmail , SpreadsheetApp , 
-getCKThisForm , proposalC , dbInstG
+getCKThisForm , proposalC , dbInstG , propListInstG
 */
 /* exported readInListFromTable, , writeToTable , 
 getProposalData , getProposalNamesAndIDs , getProposalNames , getAddressSuiteFloorSF,
 getSpaceDisplay,getNamedProposalData,writePropDetail,writeProposal,
 setProposalCurrent,getCurrentProposal,objectToArray,rangeToObjects,testMatchingBRProposalID,
 testReadFromClauses,testReadFromProposals*/
-
-//const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
-// eslint-disable-next-line no-global-assign
-// Logger = BetterLog.useSpreadsheet(ssLogID);
-// eslint-disable-next-line no-unused-vars
-function testclientSetProposalCurrent() {
-  var pnS = "Club Med at 25th-1";
-  var ret = clientSetProposalCurrent(pnS);
-  console.log(ret);
-}
 
 
 /**
@@ -336,7 +326,7 @@ function getProposalNamesAndIDs(dbInst, userS = userEmail) {
     ret = readFromTable(dbInst, tableNameS, colNameS, searchS, jsonyn);
     if (!ret) throw new Error(`problem reading from table ${tableNameS}`);
     var propNameIDA = ret.map(function (record) {
-      return [record.proposalname, record.proposalid]
+      return [record.proposalname, record.proposalid, record.current]
     });
   } catch (err) {
     var probS = `In ${fS} error ${err}`;
@@ -569,10 +559,10 @@ SET
 // eslint-disable-next-line no-unused-vars
 const logSetProposalCurrent = false;
 
-function setProposalCurrent(dbInst, propInst) {
+function setProposalCurrent(dbInst, pid) {
   var fS = "setProposalCurrent";
   try {
-    var pid = propInst.getID();
+    // var pid = propInst.getID();
     var locConn = dbInst.getconn(); // get connection from the instance
 
     // first set all proposal current -> false
@@ -585,9 +575,9 @@ function setProposalCurrent(dbInst, propInst) {
     stmt.execute();
   } catch (err) {
     Logger.log(`in ${fS} qryS1 is ${qryS1} qryS2 is ${qryS2}`);
-    return "Problem"
+    return false
   }
-  return "Success"
+  return true
 
 }
 /**
@@ -602,13 +592,15 @@ function setProposalCurrent(dbInst, propInst) {
 function clientSetProposalCurrent(pnS) {
   var fS = "clientSetProposalCurrent";
   var dbInst;
-  var propInst;
   Logger.log(`Getting into clientSetProposalCurrent with ${pnS}`);
   try {
-    dbInst = dbInstG;
-    propInst = new proposalC(dbInst, pnS);
+    const dbInst = dbInstG;
+    const propListInst = propListInstG;
+    // propInst = new proposalC(dbInst, pnS);
     // var pid = propInst.getID();
-    var ret = setProposalCurrent(dbInst, propInst);
+    const pid = propListInst.getIDfromName(pnS);
+    propListInst.setCurr(pid);
+    var ret = setProposalCurrent(dbInst, pid);
     if (!ret) throw new Error(`problem in setProposalCurrent for ${pnS}`);
     var overDA = clientGetCDData(pnS);
     if (!ret) throw new Error(`problem in clientGetCDData for ${pnS}`);
@@ -915,7 +907,7 @@ function getOpExpData(dbInst, proposalID) {
     ckA = getCKThisForm(dbInst, "Operating Expenses");
     if (!ckA) throw new Error(`problem getting clausekeys from Operating Expenses  form`)
     const locConn = dbInst.getconn(); // get connection from the instance 
-    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_question WHERE FormName = "Operating Expenses");`;
+    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_repl WHERE FormName = "Operating Expenses");`;
     const stmt = locConn.prepareStatement(qryS);
     const results = stmt.executeQuery(qryS);
 
@@ -959,7 +951,7 @@ function getTIData(dbInst, proposalID) {
     ckA = getCKThisForm(dbInst, "Tenant Improvements");
     if (!ckA) throw new Error(`problem getting clausekeys from Tenant Improvements form`)
     const locConn = dbInst.getconn(); // get connection from the instance 
-    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_question WHERE FormName = "Tenant Improvements");`;
+    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_repl WHERE FormName = "Tenant Improvements");`;
     const stmt = locConn.prepareStatement(qryS);
     const results = stmt.executeQuery(qryS);
 
@@ -988,7 +980,7 @@ function getTIData(dbInst, proposalID) {
 /**
  * Purpose: client side calls to get alloverview information f
  * or a given proposal ID
- * by querying _prop_detail_ based on the id and sub query of ck_question
+ * by querying _prop_detail_ based on the id and sub query of ck_repl
  *
  * @param  {object} dbInst - instance of databaseC
  * @param  {string} proposalID - an array of responses 
@@ -1009,7 +1001,7 @@ function clientGetTIData(proposalNameS) {
     var proposalID = propInst.getID();
 
     const locConn = dbInst.getconn(); // get connection from the instance 
-    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_question WHERE FormName = "Tenant Improvements");`;
+    const qryS = `SELECT * FROM   prop_detail WHERE ProposalID = "${proposalID}" and ProposalClauseKey IN (SELECT ClauseKey FROM ck_repl WHERE FormName = "Tenant Improvements");`;
     const stmt = locConn.prepareStatement(qryS);
     const results = stmt.executeQuery(qryS);
     Logger.log(`in ${fS}: qry is ${qryS}`);
@@ -1061,13 +1053,13 @@ function getPropSize(dbInst, propID, userS) {
 /**
  * Purpose: client side calls to get readiness information f
  * or a given proposal ID
- * by querying _prop_detail_ based on the id and sub query of ck_question
+ * by querying _prop_detail_ based on the id and sub query of ck_repl
  *
  * @param  {object} dbInst - instance of databaseC
  * @param  {string} proposalID - an array of responses 
  * @return {object[]} resA - return array of objects
  * Format of returned array of objects: 
- * [{ 'ans': ProposalAnswer, 'quest': ProposalQuestion, 'sect': section },..]
+ * 
  * clausekeys and answers
  */
 const disp_clientGetCDData = false;
