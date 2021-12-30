@@ -1,0 +1,106 @@
+<script>
+  // Prevent forms from submitting naturally
+  function preventFormSubmit() {
+    var forms = document.querySelectorAll('form');
+    for (var i = 0; i < forms.length; i++) {
+      forms[i].addEventListener('submit', function (event) {
+        event.preventDefault();
+      });
+    }
+  }
+  window.addEventListener('load', preventFormSubmit);
+
+  /**
+   * Purpose: go to server side and process the form using processForm
+   * processForm cod is in poCode.js
+   *
+   * @param  {object} formObject 
+   * @return {boolean} ret - return value
+   */
+  function handleFormSubmit(formObject) {
+    var outcomeS;
+    showSpinner();
+    google.script.run.
+      withSuccessHandler(showSuccessModal).
+      withFailureHandler(showFailureModal).
+      processForm(formObject);
+      
+    document.getElementById("subBtn").blur();
+  
+    return true
+  }
+
+  /**
+   * Purpose: these functions show modals
+   *
+   * @return {boolean} true - return value
+   */
+
+  function showSuccessModal() {
+    console.log("in showSuccessModal");
+    $("#modal-2").modal('show');
+    hideSpinner();
+    return true
+  }
+  function showFailureModal() {
+    $("modal-1").modal('show');
+    hideSpinner();
+    return true
+  }
+
+  var psel = document.getElementById("selectProposal");
+  psel.addEventListener('change', updatePropSelect);
+
+  function updatePropSelect() {
+    var fS = "updatePropSelect";
+    showSpinner();
+    try {
+      // get the selected proposal and set it to current
+      // via server call clientSetProposalCurrent
+      var psel = document.getElementById("selectProposal");
+      var newProposal = psel.options[psel.selectedIndex].value;
+      console.log(`in ${fS} new proposal is ${newProposal}`);
+      google.script.run.
+        withSuccessHandler(createTable).
+        withFailureHandler(onCSP_Failure).
+        clientSetProposalCurrent(newProposal);
+        // createTable is in loadForm.html
+        // clientSetProposalCurrent is in gcloudSQL
+    } catch (err) {
+      console.log(`In ${fS}: ${err}`);
+      return false
+    }
+    return true
+  }
+
+  
+  
+  function onCSP_Failure(propA) {
+    $("modal-1").modal('show');
+    console.log(`In onCSP_Failure param is ${JSON.stringify(propA)}`);
+  }
+
+  /*************************** form utilities ***********************/
+  function hideSpinner() {
+    console.log("attempting to hide spinner");
+
+    document.getElementById('spindiv')
+      .style.visibility = 'hidden';
+  }
+  function showSpinner() {
+    console.log("attempting to show spinner");
+
+    document.getElementById('spindiv')
+      .style.visibility = 'visible';
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bss-tooltip]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    })
+  }, false);
+
+
+</script>

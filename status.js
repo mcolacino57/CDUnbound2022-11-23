@@ -1,5 +1,5 @@
-/*global databaseC,Logger*/
-/*exported executeStatus*/
+/*global Logger , dbInstG  */
+/*exported executeStatus,getCurrPropID_s*/
 //Logger = BetterLog.useSpreadsheet(ssStatus);
 
 /* 
@@ -7,48 +7,55 @@ Before beginning to create a document, this code should run to give a "report" i
 of the ssStatus sheet reflecting what has been done on a given proposal. This should assume 
 that the proposal marked as "current" will be the one of interest
 */
-
-const logGetCurrPropID = true;
 /**
- * Purpose: Query the proposals table, getting the full record where current=true
+ * Purpose: Get current proposal for this user, and return the proposal id if there is
+ * one that's current, or false if there aren't any
  *
- * @return {object[]} recA - array-record from proposals
+ * @param  {object} dbInst- instance of databaseC
+ * @param  {string} userS - current user 
+ * @return {string} propID - prop ID string or false
  */
 
-function getCurrPropID_() {
-  var fS = "getCurrPropID";
-  var recA = [];
-  try {
-    var dbInst = new databaseC("applesmysql");
-    var recCnt = 0;
-    var locConn = dbInst.getconn(); // get connection from the instance
-    var qryS = `SELECT proposals.ProposalID,proposals.ProposalName FROM proposals WHERE proposals.current = true ;`;
-    var stmt = locConn.prepareStatement(qryS);
-    var results = stmt.executeQuery(qryS);
-    while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
-      var propID = results.getString("ProposalID");
-      var propS = results.getString("ProposalName");
-      recCnt++;
-    }
-    if(recCnt==0 || recCnt>1){
-      throw new Error(`In ${fS}, recCnt should be 1 but is ${recCnt}`)
-    }
-  } catch (err) {
-    logGetCurrPropID ? Logger.log(`In ${fS}: ${err}`) : true;
-    return false
-  }
-  dbInst.closeconn();
-  logGetCurrPropID ? Logger.log(recA) : true;
-  return [propID,propS]
-}
+ const logGetCurrPropID = false;
+ function getCurrPropID_(dbInst, userS) {
+   var fS = "getCurrPropID";
+   var propID = "";
+   var propNameS = "";
+   var rowCount = 0;
+   try {
+     var locConn = dbInst.getconn(); // get connection from the instance
+     var qryS = `SELECT proposals.ProposalID,proposals.ProposalName FROM proposals WHERE proposals.current = true AND proposals.CreatedBy = '${userS}';`;
+     var stmt = locConn.prepareStatement(qryS);
+     var results = stmt.executeQuery(qryS);
+     while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
+       propID = results.getString("ProposalID");
+       propNameS = results.getString("ProposalName");
+       rowCount++;
+       if (rowCount > 1) {
+         throw new Error(`more than one proposal marked current`);
+       }
+     }
+   } catch (err) {
+     const probS = `In ${fS}: ${err}`;
+     logGetCurrPropID ? Logger.log(probS) : true;
+     throw new Error(probS) // send up to calling function
+   }
+   logGetCurrPropID ? console.log(`In ${fS} propID: ${propID}`) : true;
+   if (propID === "") {
+     return [false, false]
+   }
+   else {
+     return [propID, propNameS]
+   }
+ }
 
 function extractPropDetail_(propID) {
   var fS = "extractPropDetail_";
   var recA = [];
+  const dbInst = dbInstG;
   try {
-    var dbInst = new databaseC("applesmysql");
     var locConn = dbInst.getconn(); // get connection from the instance
-    var qryS = `SELECT section,ProposalQuestion,ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
+    var qryS = `SELECT section , ProposalAnswer FROM prop_detail_ex WHERE prop_detail_ex.ProposalID = '${propID}' ORDER BY section;`;
     var stmt = locConn.prepareStatement(qryS);
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
@@ -66,7 +73,6 @@ function extractPropDetail_(propID) {
     return "Problem"
   }
   dbInst.closeconn();
-  //console.log(dataA);
   return dataA
 }
 
@@ -74,6 +80,5 @@ function executeStatus() {
   var retA = getCurrPropID_();
   var ret = extractPropDetail_(retA[0]);
   return ret
-  // console.log(ret);
 
 }

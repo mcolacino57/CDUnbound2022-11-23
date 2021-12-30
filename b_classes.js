@@ -41,6 +41,7 @@ class proposalC {
     this.name = this.prop[0];
     this.id = this.prop[1];
     this.size = getPropSize(dbInst, this.id, userEmail);
+<<<<<<< HEAD:classes.js
   }
   getName() {
     return this.name
@@ -51,6 +52,18 @@ class proposalC {
   getSize() {
     return this.size
   }
+=======
+  }
+  getName() {
+    return this.name
+  }
+  getID() {
+    return this.id
+  }
+  getSize() {
+    return this.size
+  }
+>>>>>>> ck_repl-2022-12-28:b_classes.js
 }
 
 // Contains an updated list of proposals (ids and names) and also the
@@ -59,6 +72,7 @@ class propListC {
   constructor(dbInst) {
     this.propNIDA = getProposalNamesAndIDs(dbInst, userEmail);
     for (var i = 0; i < this.propNIDA.length; i++) {
+<<<<<<< HEAD:classes.js
       if(this.propNIDA[i][2]==1){ this.currID = this.propNIDA[i][1]}
     }
   }
@@ -67,6 +81,17 @@ class propListC {
   getIndexed(idx) {
     return this.propNIDA[idx]
   }
+=======
+      //Logger.log(`in propListC constructor: ${JSON.stringify(this.propNIDA[i])}`);
+      if(this.propNIDA[i][2]==1){ this.currID = this.propNIDA[i][1]}
+    }
+  }
+  getPropNIDA() { return this.propNIDA }
+  // for testing purposes
+  getIndexed(idx) {
+    return this.propNIDA[idx]
+  }
+>>>>>>> ck_repl-2022-12-28:b_classes.js
   getIDfromName(propNameS) {
     for (var i = 0; i < this.propNIDA.length; i++) {
       if (this.propNIDA[i][0] == propNameS) return this.propNIDA[i][1]
@@ -178,6 +203,7 @@ class docC {
 
 }
 
+<<<<<<< HEAD:classes.js
 // class holding question arrays and section titles
 class questionC {
   constructor(questionA, sectionS) {
@@ -186,6 +212,8 @@ class questionC {
   }
 }
 
+=======
+>>>>>>> ck_repl-2022-12-28:b_classes.js
 class databaseC {
   constructor(dbS) {
     this.root = 'root';
