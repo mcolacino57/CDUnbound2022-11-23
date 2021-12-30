@@ -4,39 +4,39 @@ getProposalNamesAndIDs  */
 /*exported ckStringC, proposalC,brokerC,docC,responseC,databaseC, propListC */
 
 class ckStringC {
-  constructor(dbInst,htmlFormObject) {
-      const fS = "clause key string constructor";
-      try {
-        var retS = "'";
-        var ckA = Object.keys(htmlFormObject); // all clauseKeys from form
-        //strip out htmlFormObject values that aren't clauseKeys; this will change if more
-        //fields are added to the form that aren't clauseKeys
-        ckA = ckA.filter(item => item !== "selectProposal");
-    
-        var l = ckA.length;
-        for (var j = 0; j < l - 1; j++) {
-          retS = retS + (ckA[j] + "', '");
-        }
-        retS = retS + (ckA[l - 1]+"'");
-      } catch (err) {
-        const probS = `In ${fS} ${err}`;
-        throw new Error(probS);
+  constructor(dbInst, htmlFormObject) {
+    const fS = "clause key string constructor";
+    try {
+      var retS = "'";
+      var ckA = Object.keys(htmlFormObject); // all clauseKeys from form
+      //strip out htmlFormObject values that aren't clauseKeys; this will change if more
+      //fields are added to the form that aren't clauseKeys
+      ckA = ckA.filter(item => item !== "selectProposal");
+
+      var l = ckA.length;
+      for (var j = 0; j < l - 1; j++) {
+        retS = retS + (ckA[j] + "', '");
       }
-      // Logger.log(`In ${fS}: retS is ${retS}`);
-      this.ckString = retS;
+      retS = retS + (ckA[l - 1] + "'");
+    } catch (err) {
+      const probS = `In ${fS} ${err}`;
+      throw new Error(probS);
+    }
+    // Logger.log(`In ${fS}: retS is ${retS}`);
+    this.ckString = retS;
   }
-  
+
   getCKString() {
     return this.ckString
   }
 
-  }
+}
 
 class proposalC {
   constructor(dbInst, propName) {
     this.allPropsA = getProposalNamesAndIDs(dbInst, userEmail);
     this.prop = this.allPropsA.filter((p) => {
-      return p[0] == propName  // returns array with propName and propID
+      return p[0] == propName // returns array with propName and propID
     })[0];
     this.name = this.prop[0];
     this.id = this.prop[1];
@@ -59,11 +59,14 @@ class propListC {
   constructor(dbInst) {
     this.propNIDA = getProposalNamesAndIDs(dbInst, userEmail);
     for (var i = 0; i < this.propNIDA.length; i++) {
-      //Logger.log(`in propListC constructor: ${JSON.stringify(this.propNIDA[i])}`);
-      if(this.propNIDA[i][2]==1){ this.currID = this.propNIDA[i][1]}
+      if (this.propNIDA[i][2] == 1) {
+        this.currID = this.propNIDA[i][1]
+      }
     }
   }
-  getPropNIDA() { return this.propNIDA }
+  getPropNIDA() {
+    return this.propNIDA
+  }
   // for testing purposes
   getIndexed(idx) {
     return this.propNIDA[idx]
@@ -78,18 +81,20 @@ class propListC {
     for (var i = 0; i < this.propNIDA.length; i++) {
       if (this.propNIDA[i][1] == propID) return this.propNIDA[i][0]
     }
-    return false  //   this.name = this.allPropsNameIDA.filter( p => {
-    //     if (p[1] == propID) return p[0]
-    //   });
+    return false 
   }
   addNameID(nameIDA) {
     nameIDA.forEach(e => this.propNIDA.push(e))
     return this.propNIDA
   }
-  setCurr(id) { this.currID = id }
-  getCurr() { return this.currID }
+  setCurr(id) {
+    this.currID = id
+  }
+  getCurr() {
+    return this.currID
+  }
 }
-  /*****************clause class ************************************ */
+/*****************clause class ************************************ */
 
 class clauseC {
   constructor(canonName, geo) {
@@ -97,16 +102,34 @@ class clauseC {
     this.geo = geo; // String, for example "New York" or "National";
     this.section = this.name; // override below
   }
-  setGeo(geo) { this.geo = geo }
-  setFormSelector(formSelector) { this.formSelector = formSelector }
-  setAtSelector(atSelector) { this.atSelector = atSelector }
-  setSection(section) { this.section = section }
+  setGeo(geo) {
+    this.geo = geo
+  }
+  setFormSelector(formSelector) {
+    this.formSelector = formSelector
+  }
+  setAtSelector(atSelector) {
+    this.atSelector = atSelector
+  }
+  setSection(section) {
+    this.section = section
+  }
 
-  getName() { return this.name }
-  getGeo() { return this.geo }
-  getFormSelector() { return this.formSelector }
-  getAtSelector() { return this.atSelector }
-  getSection() { return this.section }
+  getName() {
+    return this.name
+  }
+  getGeo() {
+    return this.geo
+  }
+  getFormSelector() {
+    return this.formSelector
+  }
+  getAtSelector() {
+    return this.atSelector
+  }
+  getSection() {
+    return this.section
+  }
 }
 
 /*****************people classes ************************************ */
@@ -119,9 +142,11 @@ class personC {
     this.company = company;
     this.contactemail = contactemail;
     this.contactaddress = contactaddress;
-    this.persontype = "PERSON";  // default for person
+    this.persontype = "PERSON"; // default for person
   }
-  set perType(type) { this.persontype = type }
+  set perType(type) {
+    this.persontype = type
+  }
 }
 /* Class to wrap up a broker */
 class brokerC extends personC {
@@ -134,7 +159,7 @@ class brokerC extends personC {
     //super(contactemail);
     //super(contactaddress);
     this.id = id;
-    this.persontype = "BROKER"  // default for broker
+    this.persontype = "BROKER" // default for broker
   }
 
   setReptList(reptA) {
@@ -142,8 +167,7 @@ class brokerC extends personC {
       this.replacename = reptA[0];
       this.replacecompany = reptA[1];
       this.replaceaddress = reptA[2];
-    }
-    else {
+    } else {
       this.replacename = "<<ListingBrokerName>>"; // replacement defaults
       this.replacecompany = "<<ListingBrokerCompanyName>>";
       this.replaceaddress = "<<ListingBrokerAddress>>";
@@ -170,7 +194,9 @@ class docC {
     this.locBody = this.locDocument.getBody();
   }
 
-  getBodyText() { return this.locBody.getText() }
+  getBodyText() {
+    return this.locBody.getText()
+  }
 
   saveAndCloseTemplate() {
 
@@ -186,8 +212,10 @@ class databaseC {
     this.db = dbS; // name of the database
 
     if (dbS == "applesmysql_loc") {
-    this.conn = Jdbc.getConnection('jdbc:mysql://localhost:3306/' + this.db,
-      { user: this.root, password: this.rootPWD });
+      this.conn = Jdbc.getConnection('jdbc:mysql://localhost:3306/' + this.db, {
+        user: this.root,
+        password: this.rootPWD
+      });
       return;
     }
     this.connectionName = 'fleet-breaker-311114:us-central1:applesmysql';
@@ -200,7 +228,7 @@ class databaseC {
     this.connectParam = `dbUrl: ${this.dbUrl} user: ${this.user} and ${this.userPwd}`;
     // console.log("Inside databaseC " + this.connectParam);
     this.conn = Jdbc.getCloudSqlConnection(this.dbUrl, this.user, this.userPwd);
-  
+
   }
 
   getdbUrl() {
@@ -214,8 +242,8 @@ class databaseC {
   }
   getcolumns(tableNameS) {
     try {
-    var qryS = `SHOW COLUMNS FROM ${tableNameS};`
-      var colA=[];
+      var qryS = `SHOW COLUMNS FROM ${tableNameS};`
+      var colA = [];
       var stmt = this.conn.createStatement();
       var cols = stmt.executeQuery(qryS);
       while (cols.next()) {
@@ -231,6 +259,7 @@ class databaseC {
 
   }
 }
+
 function formatCurrentDate() {
   return Utilities.formatDate(new Date(), "GMT+1", "yyyyMMdd");
 }
