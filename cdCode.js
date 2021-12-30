@@ -392,7 +392,6 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
   return true
 }
 
-
 /**
  * Purpose: Handles operating expenses, real estate taxes, and electric
  *
