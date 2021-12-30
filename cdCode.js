@@ -1,13 +1,3 @@
-<<<<<<< HEAD
-/*exported testIncPropName,runTests,testEvalResponses,testCrFormResponseArray,
-testProposalNameYN,onSubmit,testGetNamedProposalData, testQuestionToClauseKey ,
-testGetProposalData, testPrintTitlesAndIDs,todayS,nowS,testHandleOver,testHandleExpenses,
-testHandleBR */
-
-/*global Utilities,Session,Logger,BetterLog,databaseC, docC,proposalC,
- getCurrPropID_,readFromTable,DriveApp,readInListFromTable,
- UnitTestingApp,maxRows*/
-=======
 /*exported testIncPropName , runTests , testEvalResponses,
 testProposalNameYN,  onSubmit , testGetNamedProposalData ,
 testGetProposalData , testPrintTitlesAndIDs , todayS , nowS , 
@@ -18,7 +8,6 @@ docID , foldID , propListInstG*/
  getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows , BetterLog ,
  HtmlService , saveAsJSON , readInClausesFromTable , propListC */
 // 210727 10:39
->>>>>>> ck_repl-2022-12-28
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
 const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
@@ -32,12 +21,6 @@ const dbInstG = new databaseC(databaseNameG);
 const propListInstG = new propListC(dbInstG);
 
 
-<<<<<<< HEAD
-const clauseKeyObjG = {
-  expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')"
-};
-
-=======
 
 /************** clauseKey strings object ***********************/
 /* UPDATE  these when form is modified especially when new clauses/clauseKeys are added */
@@ -49,14 +32,11 @@ const clauseKeyObjG = {
 };
 
 const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
->>>>>>> ck_repl-2022-12-28
 // eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
 // var dbInstG = new databaseC("applesmysql");
 
-<<<<<<< HEAD
-=======
 /**
  * Purpose: When using html forms, this function is called by 
  * processForm with the form object from the html 
@@ -87,7 +67,6 @@ function onHtmlSubmit(htmlFormObject = {'val': "unneeded"}) {
   }
 }
 
->>>>>>> ck_repl-2022-12-28
 const logEvalProposal = false;
 /**
  * Purpose: Evaluate responses to this form and write records to prop_detail table
