@@ -397,7 +397,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
  *
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
- * @param  {Object} propInst - instance of proposalC
+ * @param  {string} propSize - size of proposal
  * @return {boolean} t/f - return true or false
  */
 // fixed to include propSize
