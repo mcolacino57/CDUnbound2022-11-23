@@ -1,7 +1,22 @@
 /* eslint-disable no-unused-vars */
 /*global Logger, getPropSize,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities ,
-getProposalNamesAndIDs  */
+getProposalNamesAndIDs , getPropSize , getPropLocation , 
+getPropStructFromName */
 /*exported ckStringC, proposalC,brokerC,docC,responseC,databaseC, propListC */
+
+
+class ckC {
+  constructor(dbInst, ck, proposalSize, proposalLocation, version) {
+    this.clauseBody = getClauseBody(dbInst, ck, proposalSize, proposalLocation, version);
+    this.replStruct = getReplStructS(dbInst, ck);
+  }
+  getClauseBody() {
+    return this.clauseBody
+  }
+  getReplStruct() {
+    return this.replStruct;
+  }
+}
 
 class ckStringC {
   constructor(dbInst, htmlFormObject) {
@@ -34,13 +49,25 @@ class ckStringC {
 
 class proposalC {
   constructor(dbInst, propName) {
-    this.allPropsA = getProposalNamesAndIDs(dbInst, userEmail);
-    this.prop = this.allPropsA.filter((p) => {
-      return p[0] == propName // returns array with propName and propID
-    })[0];
-    this.name = this.prop[0];
-    this.id = this.prop[1];
-    this.size = getPropSize(dbInst, this.id);
+    // this.allPropsA = getProposalNamesAndIDs(dbInst, userEmail);
+    // this.prop = this.allPropsA.filter((p) => {
+    //   return p[0] == propName // returns array with propName and propID
+    // })[0];
+    // this.name = this.prop[0];
+    // this.id = this.prop[1];
+    // this.size = getPropSize(dbInst, this.id, userEmail);
+    // this.location = getPropLocation(dbInst, this.id);
+    var propStruct = getPropStructFromName(dbInst, propName);
+    if (propStruct) {
+      this.name = propName;
+      this.id = propStruct.ProposalID;
+      this.size = propStruct.ProposalSize;
+      this.location = propStruct.ProposalLocation;
+      this.tenant = propStruct.TenantName;
+    } else {
+      throw new Error(`in proposalC constructor, problem finding data for ${propName}`);
+    }
+
   }
   getName() {
     return this.name
@@ -50,6 +77,12 @@ class proposalC {
   }
   getSize() {
     return this.size
+  }
+  getLocation() {
+    return this.location
+  }
+  getTenant() {
+    return this.tenant
   }
 }
 
@@ -81,7 +114,9 @@ class propListC {
     for (var i = 0; i < this.propNIDA.length; i++) {
       if (this.propNIDA[i][1] == propID) return this.propNIDA[i][0]
     }
-    return false 
+    return false //   this.name = this.allPropsNameIDA.filter( p => {
+    //     if (p[1] == propID) return p[0]
+    //   });
   }
   addNameID(nameIDA) {
     nameIDA.forEach(e => this.propNIDA.push(e))
@@ -131,6 +166,7 @@ class clauseC {
     return this.section
   }
 }
+
 
 /*****************people classes ************************************ */
 
@@ -262,4 +298,80 @@ class databaseC {
 
 function formatCurrentDate() {
   return Utilities.formatDate(new Date(), "GMT+1", "yyyyMMdd");
+}
+
+/**
+ * Purpose: Does a query on the clauses table to extract the clausebody
+ * corresponding to this ck, location, size, and version, where version
+ * is defaulted to current
+ *
+ * @param  {object} dbInst - instance of database
+ * @param  {String} ck - clauseKey
+ * @param  {String} proposalSize - size of proposal
+ * @param  {String} proposalLocation - location of proposalSize
+ * @param  {string} version - versioning on ck
+ * @return {string} clauseBody - clause body corresponding to this ck
+ * 
+ */
+const disp_getClauseInfo = true;
+
+function getClauseBody(dbInst, ck, proposalSize, proposalLocation, version = "current") {
+  const fS = "getClauseInfo";
+  try {
+    var clauseBody = "";
+    var replStruct = "";
+    var probS = "";
+    var stmt;
+    var results;
+    // Get all the clauses that match the ck and have correct version 
+    var qryS = `select ClauseBody, ClauseSize, ClauseLocation from clauses where ClauseKey ='${ck}' and ClauseSize = '${proposalSize}' and ClauseVersion='${version}';`;
+    const locConn = dbInst.getconn();
+    stmt = locConn.createStatement();
+    results = stmt.executeQuery(qryS);
+    if (!results.next()) {
+      throw new Error(`for ck ${ck} and proposalSize ${proposalSize} and version ${version}, missing clause`);
+    }
+    results.beforeFirst();
+    results.next();
+    const clauseLocation = results.getString("ClauseLocation");
+    if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')) {
+      clauseBody = results.getString("ClauseBody")
+    } else {
+      throw new Error(`for ck ${ck} and proposalLocation ${proposalLocation} missing clause`)
+    }
+  } catch (err) {
+    throw new Error(err.message);
+  }
+  return clauseBody
+}
+
+/**
+ * Purpose: Takes a clausekey and gets its replstruct
+ *
+ * @param  {object} dbInst - instance of the database
+ * @param  {string} ck - clause key
+ * @return {String} replStruct - replacement structure string (not struct) 
+ */
+function getReplStructS(dbInst, ck) {
+  const fS = "getReplStructS";
+  var replStructS;
+
+  try {
+    const qryS = `select ReplStruct from ck_repl where ClauseKey ='${ck}';`
+    const locConn = dbInst.getconn();
+    const stmt = locConn.createStatement();
+    const results = stmt.executeQuery(qryS);
+    if (results.next()) {
+      replStructS = results.getString("ReplStruct");
+    } else {
+      const probS = `clauseKey ${ck} not found in ck_repl`;
+      throw new Error(probS);
+    }
+
+  } catch (error) {
+    Logger.log(`In ${fS}: error ${error.message}`);
+    return false
+  }
+
+  return replStructS
 }
