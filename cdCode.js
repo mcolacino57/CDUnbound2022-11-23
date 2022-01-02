@@ -251,12 +251,12 @@ function handleJSON(dbInst, docInst) {
  * @param  {Object} docInst - instance of document class
  * @return {boolean} return - true or false
  */
-// attempted fix on propSize
+// clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
+
 function handleTI(dbInst, docInst, propSize) {
   var fS = "handleTI",
     probS, bestFitRow;
-  var tiInS = clauseKeyObjG.ti;
-  //var tiInS = "('tiAllow','tiFreight','tiAccess','tiCompBid')";
+  var tiInS = clauseKeyObjG.ti; 
   try {
     var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
 
@@ -462,11 +462,11 @@ function handleExpenses(dbInst, docInst, propSize) {
  *
  * @param  {String} propSize - param
  * @param  {String} ck - clause key
- * @param  {Object[]} pdr - stands for proposal detail rows
+ * @param  {Object[]} pdrs - proposal detail rows
  * @return {Object} r - row object or false
  */
 
-function matchProposalSizeWithClause(propSize, ck, pdr) {
+function matchProposalSizeWithClause(propSize, ck, pdrs) {
   const fS = "matchProposalSizeWithClause";
   try {
     var r = "";
@@ -474,22 +474,22 @@ function matchProposalSizeWithClause(propSize, ck, pdr) {
     switch (propSize) {
       case "L":
         // find exact match if possible
-        r = retRowF("L", ck, pdr);
+        r = retRowF("L", ck, pdrs);
         if (r) return r;
-        r = retRowF("M", ck, pdr);
+        r = retRowF("M", ck, pdrs);
         if (r) return r;
-        r = retRowF("S", ck, pdr);
+        r = retRowF("S", ck, pdrs);
         if (r) return r;
         throw new Error(probS)
       case "M":
         // find exact match if possible
-        r = retRowF("M", ck, pdr);
+        r = retRowF("M", ck, pdrs);
         if (r) return r;
-        r = retRowF("S", ck, pdr);
+        r = retRowF("S", ck, pdrs);
         if (r) return r;
         throw new Error(probS)
       case "S":
-        r = retRowF("S", ck, pdr);
+        r = retRowF("S", ck, pdrs);
         if (r) return r;
         throw new Error(probS)
     } // end switch
@@ -503,9 +503,9 @@ function matchProposalSizeWithClause(propSize, ck, pdr) {
   return false
 }
 
-function retRowF(findSize, ck, pdr) {
-  for (var i = 0; i < pdr.length; i++) {
-    if (pdr[i].proposalclausekey === ck && pdr[i].clausesize === findSize) return pdr[i]
+function retRowF(findSize, ck, pdrs) {
+  for (var i = 0; i < pdrs.length; i++) {
+    if (pdrs[i].proposalclausekey === ck && pdrs[i].clausesize === findSize) return pdrs[i]
   }
   return false
 }

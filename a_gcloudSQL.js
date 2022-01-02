@@ -1026,31 +1026,6 @@ function clientGetTIData(proposalNameS) {
 }
 
 /**
- * Purpose: Get the size of the current proposal
- *
- * @param  {object} dbInst - instance of databaseC
- * @param  {string} propID - proposal id
- * @return {String} retS - return S/M/L
- */
-// eslint-disable-next-line no-unused-vars
-function getPropSize(dbInst, propID, userS) {
-  var fS = "getPropSize";
-  try {
-    var locConn = dbInst.getconn();
-    var qryS = `SELECT ProposalSize FROM proposals WHERE ProposalID = '${propID}' AND CreatedBy = '${userS}'`;
-    var stmt = locConn.prepareStatement(qryS);
-    var results = stmt.executeQuery(qryS);
-    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
-      var value = results.getString("ProposalSize")
-    }
-  } catch (err) {
-    var probS = `In ${fS} error ${err}`;
-    Logger.log(probS);
-    return false
-  }
-  return value
-}
-/**
  * Purpose: client side calls to get readiness information f
  * or a given proposal ID
  * by querying _prop_detail_ based on the id and sub query of ck_repl

@@ -40,7 +40,7 @@ class proposalC {
     })[0];
     this.name = this.prop[0];
     this.id = this.prop[1];
-    this.size = getPropSize(dbInst, this.id, userEmail);
+    this.size = getPropSize(dbInst, this.id);
   }
   getName() {
     return this.name
