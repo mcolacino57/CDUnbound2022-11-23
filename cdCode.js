@@ -6,7 +6,8 @@ docID , foldID , propListInstG*/
 
 /*global Utilities , Logger  , databaseC , docC , proposalC,
  getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows , BetterLog ,
- HtmlService , saveAsJSON , readInClausesFromTable , propListC */
+ HtmlService , saveAsJSON , readInClausesFromTable , propListC , ckC , getPropStructFromName , 
+ propDetailC */
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
@@ -48,14 +49,16 @@ Logger = BetterLog.useSpreadsheet(ssLogID);
 
 const disp_onHtmlSubmit = false;
 // eslint-disable-next-line no-unused-vars
-function onHtmlSubmit(htmlFormObject = {'val': "unneeded"}) {
+function onHtmlSubmit(htmlFormObject = {
+  'val': "unneeded"
+}) {
   var fS = "onHtmlSubmit";
   var ret;
   //var ck2, pid;
   disp_onHtmlSubmit ? Logger.log(`The htmlFormObject is  ${JSON.stringify(htmlFormObject)}`) : true;
   // Include this test in production but not in testing
+  var dbInst = dbInstG;
   try {
-    var dbInst = dbInstG;
     ret = evalProposal(dbInst);
     return ret
 
@@ -83,10 +86,11 @@ function evalProposal(dbInst) {
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
     [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
-    var propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
-    var propSize = propInst.getSize();
+    const propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
+    const propSize = propInst.getSize();
+    const propDetailInst = new propDetailC(dbInst, propID);
 
-    ret = handleExpenses(dbInst, docInst, propSize);
+    ret = handleExpenses(dbInst, docInst, propNameS, propDetailInst);
     logLoc ? Logger.log("Expenses: " + ret) : true;
     if (!ret) {
       throw new Error(`handleExpenses returned false`)
@@ -256,7 +260,7 @@ function handleJSON(dbInst, docInst) {
 function handleTI(dbInst, docInst, propSize) {
   var fS = "handleTI",
     probS, bestFitRow;
-  var tiInS = clauseKeyObjG.ti; 
+  var tiInS = clauseKeyObjG.ti;
   try {
     var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
 
@@ -294,10 +298,10 @@ function handleTI(dbInst, docInst, propSize) {
           if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
             throw new Error(`clause is missing ${bestFitRow.replstruct}`);
           }
-            tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-          }
+          tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
         }
-      });
+      }
+    });
 
     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
     if (tiTerms != "") {
@@ -397,56 +401,60 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
  *
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
- * @param  {string} propSize - size of proposal
+ * @param  {string} propNameS - name of proposal
+ * @param  {objet}  propDetailInst - instance of prop detail
  * @return {boolean} t/f - return true or false
  */
 // fixed to include propSize
-function handleExpenses(dbInst, docInst, propSize) {
+function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
   var fS = "handleExpenses";
-  var proposalDetailRows = [];
-  // all clauseKeys in expenses UPDATE if Operating Expenses form update
-  // when working change this to extract from ck database
-  var expInS = clauseKeyObjG.expenses
+  var ckInst;
+  var repClauseS, proposalanswer, clausebody, replstruct;
+  const expInS = clauseKeyObjG.expenses;
   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
-  var repClauseS, ret, probS, elRepS, retRepS;
+  var ret, probS, elRepS, retRepS;
   try {
-    // could change query that generates prop_detail_ex to only
-    // include current proposal, or get the current proposal here
-    // and filter out, or write a query here directly which has the dis-
-    // advantage of not excapsulating db calls within gcloudSQL
-
-    proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
-    proposalDetailRows.forEach(pdRow => {
-      var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFit) {
-        switch (bestFit.section) {
-          case "OperatingExpenses":
-            repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-            ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-            if (!ret) {
-              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-            }
-            break;
-          case "Electric":
-            if (bestFit.proposalclausekey === "elecRentInc") {
-              elRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-            } else {
-              elRepS = bestFit.clausebody;
-            }
-            ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
-            if (!ret) {
-              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-            }
-            break;
-          case "RealEstateTaxes":
-            retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-            ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
-            if (!ret) {
-              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-            }
-        }
+    const propStruct = getPropStructFromName(dbInst, propNameS);
+    const tempExpCKS = expInS.slice(1, expInS.length - 2);
+    const expClauseKeyA = tempExpCKS.split(",");
+    var ck;
+    // create array of ckC instances, with each ck from expInS
+    for (ck in expClauseKeyA) {
+      ckInst = new ckC(dbInst, ck, propStruct.ProposalSize, propStruct.ProposalLocation, "current");
+      replstruct = ckInst.getReplStruct();
+      clausebody = ckInst.getClauseBody();
+      proposalanswer = propDetailInst.getAnswerFromCK(ck);
+      switch (ckInst.getSection()) {
+        case "OperatingExpenses":
+          repClauseS = clausebody.replace(replstruct, proposalanswer);
+          ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+          }
+          break;
+        case "Electric":
+          // special case (two level replace) for elecRentInc
+          if (ck === "elecRentInc") {
+            elRepS = clausebody.replace(replstruct, proposalanswer);
+          } else {
+            elRepS = clausebody;
+          }
+          ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody on ${elRepS} `)
+          }
+          break;
+        case "RealEstateTaxes":
+          retRepS = clausebody.replace(replstruct, proposalanswer);
+          ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody on ${retRepS} `)
+          }
+          break;
+        default:
+          break;
       }
-    });
+    }
   } catch (err) {
     probS = `In ${fS}: ${err} `
     Logger.log(probS);
@@ -454,6 +462,70 @@ function handleExpenses(dbInst, docInst, propSize) {
   }
   return true
 }
+
+
+// /**
+//  * Purpose: Handles operating expenses, real estate taxes, and electric
+//  *
+//  * @param  {Object} dbInst - instance of databaseC
+//  * @param  {Object} docInst - instance of documenC
+//  * @param  {string} propSize - size of proposal
+//  * @return {boolean} t/f - return true or false
+//  */
+// // fixed to include propSize
+// function handleExpenses(dbInst, docInst, propSize) {
+//   var fS = "handleExpenses";
+//   var proposalDetailRows = [];
+//   // all clauseKeys in expenses UPDATE if Operating Expenses form update
+//   // when working change this to extract from ck database
+//   var expInS = clauseKeyObjG.expenses
+//   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
+//   var repClauseS, ret, probS, elRepS, retRepS;
+//   try {
+//     // could change query that generates prop_detail_ex to only
+//     // include current proposal, or get the current proposal here
+//     // and filter out, or write a query here directly which has the dis-
+//     // advantage of not excapsulating db calls within gcloudSQL
+
+//     proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
+//     proposalDetailRows.forEach(pdRow => {
+//       var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//       if (bestFit) {
+//         switch (bestFit.section) {
+//           case "OperatingExpenses":
+//             repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+//             ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+//             if (!ret) {
+//               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+//             }
+//             break;
+//           case "Electric":
+//             if (bestFit.proposalclausekey === "elecRentInc") {
+//               elRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+//             } else {
+//               elRepS = bestFit.clausebody;
+//             }
+//             ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
+//             if (!ret) {
+//               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+//             }
+//             break;
+//           case "RealEstateTaxes":
+//             retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+//             ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
+//             if (!ret) {
+//               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+//             }
+//         }
+//       }
+//     });
+//   } catch (err) {
+//     probS = `In ${fS}: ${err} `
+//     Logger.log(probS);
+//     return false
+//   }
+//   return true
+// }
 
 /**
  * Purpose: takes a proposal size, a clausekey, and a set of rows from
@@ -620,8 +692,8 @@ function chkMajorPropDetailCategories(propID) {
       excSec = [];
     var results;
 
-   // const dbInst = new databaseC("applesmysql");
-   const dbInst = dbInstG;
+    // const dbInst = new databaseC("applesmysql");
+    const dbInst = dbInstG;
     var locConn = dbInst.getconn(); // get connection from the instance
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
@@ -787,4 +859,45 @@ function xfHtmlObj(htmlFormObject) {
 
   log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)} `) : true;
   return htmlFormObject;
+}
+
+/**
+ * Purpose: for the propID parameter make an array of structures of the form 
+ * [{ ck: theClauseKey, ans: answerFromPropDetail }..] based on all of the 
+ * prop_detail records for this propID.
+ *
+ * @param  {object} dbInst - instance of database
+ * @param  {string} propID - proposal id
+ * @return {object[]} propDetailA - return value
+ */
+
+// eslint-disable-next-line no-unused-vars
+function createPropDetailA(dbInst, propID) {
+  const fS = "createPropDetailA";
+  var propDetailA = [];
+  var ansStruct = {};
+  var results;
+
+  try {
+    const locConn = dbInst.getconn(); // get connection from the instance
+    const stmt = locConn.createStatement();
+    const qryS = `SELECT ProposalClauseKey, ProposalAnswer FROM prop_detail where ProposalID = '${propID}'`;
+    results = stmt.executeQuery(qryS);
+    if (!results.next()) {
+      throw new Error(`no prop_detail records for ${propID}`)
+    }
+    results.beforeFirst();
+    while (results.next()) {
+      ansStruct.ck = results.getString("ProposalClauseKey");
+      ansStruct.ans = results.getString("ProposalAnswer");
+      propDetailA.push(ansStruct);
+    }
+
+  } catch (error) {
+    const probS = `In ${fS}: error: ${error}`;
+    Logger.log(probS);
+    throw new Error(probS)
+
+  }
+  return propDetailA
 }

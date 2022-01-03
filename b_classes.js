@@ -1,20 +1,33 @@
 /* eslint-disable no-unused-vars */
 /*global Logger, getPropSize,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities ,
-getProposalNamesAndIDs , getPropSize , getPropLocation , 
+getProposalNamesAndIDs , getPropSize , getPropLocation , createPropDetailA ,
 getPropStructFromName */
-/*exported ckStringC, proposalC,brokerC,docC,responseC,databaseC, propListC */
+/*exported ckStringC, proposalC,brokerC,docC,responseC,databaseC, propListC   */
 
+class propDetailC {
+  constructor(dbInst, propID) {
+    this.propDetailA = createPropDetailA(dbInst, propID);
+  }
+  getAnswerFromCK(ckS) {
+    var found = this.propDetailA.find(c => c.ck === ckS);
+    return found.ans
+  }
+}
 
 class ckC {
   constructor(dbInst, ck, proposalSize, proposalLocation, version) {
-    this.clauseBody = getClauseBody(dbInst, ck, proposalSize, proposalLocation, version);
+    [this.clauseBody, this.section] = getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version);
     this.replStruct = getReplStructS(dbInst, ck);
+
   }
   getClauseBody() {
     return this.clauseBody
   }
   getReplStruct() {
     return this.replStruct;
+  }
+  getSection() {
+    return this.section;
   }
 }
 
@@ -85,6 +98,7 @@ class proposalC {
     return this.tenant
   }
 }
+
 
 // Contains an updated list of proposals (ids and names) and also the
 // current proposal
@@ -315,16 +329,17 @@ function formatCurrentDate() {
  */
 const disp_getClauseInfo = true;
 
-function getClauseBody(dbInst, ck, proposalSize, proposalLocation, version = "current") {
+function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "current") {
   const fS = "getClauseInfo";
   try {
     var clauseBody = "";
+    var clauseSection = "";
     var replStruct = "";
     var probS = "";
     var stmt;
     var results;
     // Get all the clauses that match the ck and have correct version 
-    var qryS = `select ClauseBody, ClauseSize, ClauseLocation from clauses where ClauseKey ='${ck}' and ClauseSize = '${proposalSize}' and ClauseVersion='${version}';`;
+    var qryS = `select ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseSize = '${proposalSize}' and ClauseVersion='${version}';`;
     const locConn = dbInst.getconn();
     stmt = locConn.createStatement();
     results = stmt.executeQuery(qryS);
@@ -335,14 +350,15 @@ function getClauseBody(dbInst, ck, proposalSize, proposalLocation, version = "cu
     results.next();
     const clauseLocation = results.getString("ClauseLocation");
     if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')) {
-      clauseBody = results.getString("ClauseBody")
+      clauseBody = results.getString("ClauseBody");
+      clauseSection = results.getString("ClauseSection");
     } else {
       throw new Error(`for ck ${ck} and proposalLocation ${proposalLocation} missing clause`)
     }
   } catch (err) {
     throw new Error(err.message);
   }
-  return clauseBody
+  return [clauseBody, clauseSection]
 }
 
 /**

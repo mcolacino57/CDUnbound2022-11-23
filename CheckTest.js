@@ -1,11 +1,20 @@
 /*exported testExamineForm , testPrintTitlesAndIDs, testGetCKThisForm , runTests
  */
 
-/*global  userEmail , logStatusofData, evalProposal , getCKThisForm
-chkMajorPropDetailCategories,getCurrPropID_   , dbInstG ,
-UnitTestingApp  , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
+/*global  userEmail , logStatusofData, evalProposal , getCKThisForm , propDetailC
+chkMajorPropDetailCategories , getCurrPropID_   , dbInstG ,
+UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
 onHtmlSubmit */
 
+
+// eslint-disable-next-line no-unused-vars
+function testPropDetailA() {
+  const dbInst = dbInstG;
+
+  const propDetailInst = new propDetailC(dbInst, "28f9fbf7-5a9d-11ec-a080-42010a800007"); // ember at 25th
+  console.log(`In testPropDetail ${JSON.stringify(propDetailInst)}`);
+
+}
 // eslint-disable-next-line no-unused-vars
 function testEvalProposal() {
   const dbInst = dbInstG;
