@@ -10,7 +10,7 @@ class propDetailC {
   }
   getAnswerFromCK(ckS) {
     var found = this.propDetailA.find(c => c.ck === ckS);
-    return found.ans
+    return found?.ans
   }
 }
 
@@ -351,7 +351,7 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
     const clauseLocation = results.getString("ClauseLocation");
     if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')) {
       clauseBody = results.getString("ClauseBody");
-      clauseSection = results.getString("ClauseSection");
+      clauseSection = results.getString("Section");
     } else {
       throw new Error(`for ck ${ck} and proposalLocation ${proposalLocation} missing clause`)
     }

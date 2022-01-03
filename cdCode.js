@@ -415,15 +415,17 @@ function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
   var ret, probS, elRepS, retRepS;
   try {
     const propStruct = getPropStructFromName(dbInst, propNameS);
-    const tempExpCKS = expInS.slice(1, expInS.length - 2);
-    const expClauseKeyA = tempExpCKS.split(",");
-    var ck;
+    const tempExpCKS = expInS.slice(2, expInS.length - 2);
+    const expClauseKeyA = tempExpCKS.split("','");
+   var ck;
     // create array of ckC instances, with each ck from expInS
-    for (ck in expClauseKeyA) {
+    for (var i in expClauseKeyA) {
+      ck = expClauseKeyA[i];
       ckInst = new ckC(dbInst, ck, propStruct.ProposalSize, propStruct.ProposalLocation, "current");
       replstruct = ckInst.getReplStruct();
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
+      if(!proposalanswer) continue;
       switch (ckInst.getSection()) {
         case "OperatingExpenses":
           repClauseS = clausebody.replace(replstruct, proposalanswer);
