@@ -875,7 +875,7 @@ function xfHtmlObj(htmlFormObject) {
 function createPropDetailA(dbInst, propID) {
   const fS = "createPropDetailA";
   var propDetailA = [];
-  var ansStruct = {};
+  // var ansStruct = {};
   var results;
 
   try {
@@ -888,6 +888,7 @@ function createPropDetailA(dbInst, propID) {
     }
     results.beforeFirst();
     while (results.next()) {
+      var ansStruct = {};
       ansStruct.ck = results.getString("ProposalClauseKey");
       ansStruct.ans = results.getString("ProposalAnswer");
       propDetailA.push(ansStruct);
