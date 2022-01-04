@@ -1,20 +1,19 @@
 /*exported testExamineForm , testPrintTitlesAndIDs, testGetCKThisForm , runTests
  */
 
-/*global  userEmail , logStatusofData, evalProposal , getCKThisForm , propDetailC
-chkMajorPropDetailCategories , getCurrPropID_   , dbInstG ,
+/*global logStatusofData, evalProposal , getCKThisForm , propDetailC
+chkMajorPropDetailCategories    , dbInstG ,
 UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
 onHtmlSubmit */
 
-
+/* This tests the proposal detail class and creates an instance, using Ember at 25th proposal ID*/
 // eslint-disable-next-line no-unused-vars
-function testPropDetailA() {
-  const dbInst = dbInstG;
-
-  const propDetailInst = new propDetailC(dbInst, "28f9fbf7-5a9d-11ec-a080-42010a800007"); // ember at 25th
+function testPropDetailA(dbInst, propID) {
+  const propDetailInst = new propDetailC(dbInst, propID); // ember at 25th
   console.log(`In testPropDetail ${JSON.stringify(propDetailInst)}`);
-
+  return true
 }
+
 // eslint-disable-next-line no-unused-vars
 function testEvalProposal() {
   const dbInst = dbInstG;
@@ -52,15 +51,17 @@ function testGetCKThisForm() {
 
 function runTests() {
   const dbInst = dbInstG;
-  var userS = userEmail;
-  var propID = getCurrPropID_(dbInst,userS)[0];
+  // var userS = userEmail;
+  // var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();
+  const propID = "28f9fbf7-5a9d-11ec-a080-42010a800007"; // for testing use Ember
   test.enable(); // tests will run below this line
   test.runInGas(true);
   if (test.isEnabled) {
+    test.assert(testPropDetailA(dbInst, propID), `testPropDetail -> propID ${propID} `);
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
     test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
-    test.assert(evalProposal(),`evalProposal -> propID ${propID}`)
+    test.assert(testEvalProposal(),`evalProposal -> propID ${propID}`)
 
   }
 }
