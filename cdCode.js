@@ -247,6 +247,80 @@ function handleJSON(dbInst, docInst) {
   return true
 }
 
+// /**
+//  * Purpose: Handle TI stuff, which includes
+//  * Allowance, Freight Access, and other TI conditions
+//  *
+//  * @param  {Object} dbInst - instance of database class
+//  * @param  {Object} docInst - instance of document class
+//  * @return {boolean} return - true or false
+//  */
+// // clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
+
+// function handleTI(dbInst, docInst, propSize) {
+//   var fS = "handleTI",
+//     probS, bestFitRow;
+//   var tiInS = clauseKeyObjG.ti;
+//   try {
+//     var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
+
+//     var tiTerms = "";
+//     // allowance--comes first always
+//     proposalDetailRows.forEach(pdRow => {
+//       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//       if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
+//         if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+//           throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+//         }
+//         var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
+//         // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
+//         // which then gets added to tiTerms as the first chunk
+//         tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";
+//       }
+//     });
+//     // work--comes next
+//     proposalDetailRows.forEach(pdRow => {
+//       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//       if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
+//         if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+//           throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+//         }
+//         tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+
+//       }
+
+//     });
+//     //additional provisions--after and unordered
+//     proposalDetailRows.forEach(pdRow => {
+//       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//       if (bestFitRow) {
+//         if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
+//           if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+//             throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+//           }
+//           tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+//         }
+//       }
+//     });
+
+//     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
+//     if (tiTerms != "") {
+//       tiTerms = tiTerms.replace(/\n\n$/, '');
+//     }
+//     const docReplS = "<<TenantImprovements>>";
+//     // if (!(docInst.locBody.toString.includes(docReplS))) {
+//     //   throw new Error(`document is missing ${docReplS}`);
+//     // }
+//     updateTemplateBody(docReplS, tiTerms, docInst);
+
+//   } catch (err) {
+//     probS = `In ${fS}: ${err}`
+//     Logger.log(probS);
+//     return false
+//   }
+//   return true
+// }
+
 /**
  * Purpose: Handle TI stuff, which includes
  * Allowance, Freight Access, and other TI conditions
@@ -257,53 +331,43 @@ function handleJSON(dbInst, docInst) {
  */
 // clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
 
-function handleTI(dbInst, docInst, propSize) {
+function handleTI(dbInst, docInst, propNameS, propDetailInst) {
   var fS = "handleTI",
-    probS, bestFitRow;
-  var tiInS = clauseKeyObjG.ti;
+    probS, tiTerms = "";
+  var ckInst;
+  var proposalanswer, clausebody, replstruct;
+  var inS = clauseKeyObjG.ti;
   try {
-    var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
-
-    var tiTerms = "";
-    // allowance--comes first always
-    proposalDetailRows.forEach(pdRow => {
-      bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
-        if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-          throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-        }
-        var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
-        // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
-        // which then gets added to tiTerms as the first chunk
-        tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";
-      }
-    });
-    // work--comes next
-    proposalDetailRows.forEach(pdRow => {
-      bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
-        if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-          throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-        }
-        tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-
-      }
-
-    });
-    //additional provisions--after and unordered
-    proposalDetailRows.forEach(pdRow => {
-      bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFitRow) {
-        if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
-          if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-            throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+    const propStruct = getPropStructFromName(dbInst, propNameS);
+    const tempCKS = inS.slice(2, inS.length - 2);
+    const clauseKeyA = tempCKS.split("','");
+    var ck;
+    for (var i in clauseKeyA) {
+      ck = clauseKeyA[i];
+      ckInst = new ckC(dbInst, ck, propStruct.ProposalSize, propStruct.ProposalLocation, "current");
+      replstruct = ckInst.getReplStruct();
+      clausebody = ckInst.getClauseBody();
+      proposalanswer = propDetailInst.getAnswerFromCK(ck);
+      if (!proposalanswer) continue; // didn't find this ck in prop_detail so continue to next
+      switch (ck) {
+        case "tiAllow":
+          if (checkZeroValue(proposalanswer)) {
+            const tiDollars = curr_formatter.format(proposalanswer);
+            tiTerms = tiTerms + clausebody.replace(replstruct, tiDollars) + "\n\n";
           }
-          tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-        }
-      }
-    });
+          break;
+        case "llWork":
+          if (proposalanswer !== "") {
+            tiTerms = tiTerms + clausebody.replace(replstruct, proposalanswer) + "\n\n";
+          }
+          break;
+        default:
+          tiTerms = tiTerms + clausebody.replace(replstruct, proposalanswer) + "\n\n";
+          break;
+      } // end switch
 
-    //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
+    } // end for
+
     if (tiTerms != "") {
       tiTerms = tiTerms.replace(/\n\n$/, '');
     }
@@ -320,6 +384,66 @@ function handleTI(dbInst, docInst, propSize) {
   }
   return true
 }
+
+
+
+// var tiTerms = "";
+// // allowance--comes first always
+// proposalDetailRows.forEach(pdRow => {
+//   bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//   if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
+//     if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+//       throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+//     }
+//     var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
+//     // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
+//     // which then gets added to tiTerms as the first chunk
+//     tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";
+//   }
+// });
+// work--comes next
+// proposalDetailRows.forEach(pdRow => {
+//   bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//   if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
+//     if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+//       throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+//     }
+//     tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+
+//   }
+
+// });
+// //additional provisions--after and unordered
+// proposalDetailRows.forEach(pdRow => {
+//   bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//   if (bestFitRow) {
+//     if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
+//       if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
+//         throw new Error(`clause is missing ${bestFitRow.replstruct}`);
+//       }
+//       tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
+//     }
+//   }
+// });
+
+//if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
+// if (tiTerms != "") {
+//   tiTerms = tiTerms.replace(/\n\n$/, '');
+// }
+// const docReplS = "<<TenantImprovements>>";
+// // if (!(docInst.locBody.toString.includes(docReplS))) {
+// //   throw new Error(`document is missing ${docReplS}`);
+// // }
+// updateTemplateBody(docReplS, tiTerms, docInst);
+
+// }
+// catch (err) {
+//   probS = `In ${fS}: ${err}`
+//   Logger.log(probS);
+//   return false
+// }
+// return true
+// }
 
 /**
  * Purpose check if a value is 0 or equivalent
@@ -405,7 +529,7 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
  * @param  {objet}  propDetailInst - instance of prop detail
  * @return {boolean} t/f - return true or false
  */
-// fixed to include propSize
+// now uses ckC
 function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
   var fS = "handleExpenses";
   var ckInst;
@@ -417,7 +541,7 @@ function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
     const propStruct = getPropStructFromName(dbInst, propNameS);
     const tempExpCKS = expInS.slice(2, expInS.length - 2);
     const expClauseKeyA = tempExpCKS.split("','");
-   var ck;
+    var ck;
     // create array of ckC instances, with each ck from expInS
     for (var i in expClauseKeyA) {
       ck = expClauseKeyA[i];
@@ -425,7 +549,7 @@ function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
       replstruct = ckInst.getReplStruct();
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
-      if(!proposalanswer) continue;
+      if (!proposalanswer) continue;
       switch (ckInst.getSection()) {
         case "OperatingExpenses":
           repClauseS = clausebody.replace(replstruct, proposalanswer);
