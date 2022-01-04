@@ -1,13 +1,11 @@
-/*exported testIncPropName , runTests , testEvalResponses,
-testProposalNameYN,  onSubmit , testGetNamedProposalData ,
-testGetProposalData , testPrintTitlesAndIDs , todayS , nowS , 
-testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
-docID , foldID , propListInstG*/
+/*exported onSubmit  , todayS , nowS ,  userEmail , logStatusofData ,
+docID , foldID , propListInstG */
 
-/*global Utilities , Logger  , databaseC , docC , proposalC,
- getCurrPropID_,  readFromTable , DriveApp ,  maxRows , BetterLog ,
- HtmlService , saveAsJSON , readInClausesFromTable , propListC , ckC  , 
- propDetailC */
+/*global Utilities , Logger  , DriveApp , BetterLog , HtmlService , 
+databaseC , docC , proposalC, propListC , ckC  , propDetailC ,
+ getCurrPropID_,  readFromTable ,   maxRows , 
+ saveAsJSON  , 
+ */
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "MMMM d, yyyy");
@@ -87,7 +85,7 @@ function evalProposal(dbInst) {
     // eslint-disable-next-line no-unused-vars
     [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
     const propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
-    const propSize = propInst.getSize();
+    // const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
 
     ret = handleExpenses(dbInst, docInst, propDetailInst, propInst);
@@ -95,24 +93,32 @@ function evalProposal(dbInst) {
     if (!ret) {
       throw new Error(`handleExpenses returned false`)
     }
+    var fName = "handleExpenses";
+    console.log(`${fName} completed successfully`)
 
     ret = handleOver(dbInst, docInst, propDetailInst, propInst);
     logLoc ? Logger.log("Over: " + ret) : true;
     if (!ret) {
       throw new Error(`handleOver returned false`)
     }
+    fName = "handleOver";
+    console.log(`${fName} completed successfully`)
 
-    ret = handleTenAndPrem(dbInst, docInst, propNameS, propSize);
+    ret = handleTenAndPrem(dbInst, docInst, propInst);
     logLoc ? Logger.log("Premises: " + ret) : true;
     if (!ret) {
       throw new Error(`handleTenAndPrem returned false`)
     }
+    fName = "handleTenAndPrem";
+    console.log(`${fName} completed successfully`);
 
     ret = handleTI(dbInst, docInst, propDetailInst, propInst);
     logLoc ? Logger.log("TI: " + ret) : true;
     if (!ret) {
       throw new Error(`handleTI returned false`)
     }
+    fName = "handleTenAndPrem";
+    console.log(`${fName} completed successfully`);
 
     ret = handleJSON(dbInst, docInst);
     logLoc ? Logger.log("JSON: " + ret) : true;
@@ -387,66 +393,6 @@ function handleTI(dbInst, docInst, propDetailInst, propInst) {
   return true
 }
 
-
-
-// var tiTerms = "";
-// // allowance--comes first always
-// proposalDetailRows.forEach(pdRow => {
-//   bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//   if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
-//     if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-//       throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-//     }
-//     var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
-//     // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
-//     // which then gets added to tiTerms as the first chunk
-//     tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";
-//   }
-// });
-// work--comes next
-// proposalDetailRows.forEach(pdRow => {
-//   bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//   if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
-//     if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-//       throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-//     }
-//     tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-
-//   }
-
-// });
-// //additional provisions--after and unordered
-// proposalDetailRows.forEach(pdRow => {
-//   bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//   if (bestFitRow) {
-//     if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
-//       if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-//         throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-//       }
-//       tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-//     }
-//   }
-// });
-
-//if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
-// if (tiTerms != "") {
-//   tiTerms = tiTerms.replace(/\n\n$/, '');
-// }
-// const docReplS = "<<TenantImprovements>>";
-// // if (!(docInst.locBody.toString.includes(docReplS))) {
-// //   throw new Error(`document is missing ${docReplS}`);
-// // }
-// updateTemplateBody(docReplS, tiTerms, docInst);
-
-// }
-// catch (err) {
-//   probS = `In ${fS}: ${err}`
-//   Logger.log(probS);
-//   return false
-// }
-// return true
-// }
-
 /**
  * Purpose check if a value is 0 or equivalent
  *
@@ -462,8 +408,6 @@ function checkZeroValue(valS) {
   if (valN > 0) return true
 }
 
-
-
 /**
  * Purpose: deal with Premises, Building (Location), tenant
  *
@@ -474,46 +418,24 @@ function checkZeroValue(valS) {
  * @return {boolean} return - true or false
  */
 // attempted fix for propSize
-function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
+function handleTenAndPrem(dbInst, docInst, propInst) {
   var fS = "handleTenAndPrem",
     probS;
-  var foundCorrectSize = false;
   var premClauseBody = "";
   try {
-    var retA = readFromTable(dbInst, "proposals", "ProposalName", propIDS, false);
-    var spid = retA[0].spaceidentity;
-    var tenantNameS = retA[0].tenantname;
-    retA = readFromTable(dbInst, "survey_spaces", "identity", spid, false);
-    var spA = retA[0]
-
-    var pdA = readInClausesFromTable(dbInst);
-    // Logger.log(`In ${ fS } pdA is ${ JSON.stringify(pdA) }`);
-    if (pdA.length === 0) {
-      throw new Error(`in ${fS} 0 premises clauses ${propSize}`)
-    }
-    if (pdA.length === 1) {
-      premClauseBody = pdA[0].clausebody;
-      foundCorrectSize = true;
-    } else { // if there is more than one premise clause, choose the right one
-      for (var i = 0; i < pdA.length; i++) {
-        if (pdA[i].clausesize == propSize) {
-          foundCorrectSize = true;
-          premClauseBody = pdA[i].clausebody;
-          continue;
-        }
-      }
-    }
-    if (!foundCorrectSize) {
-      premClauseBody = pdA[0].clausebody
-    }
-
-    var fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
+    // create spA: record from survey_spaces: contains address, squareFeet, and floorAndSuite (in first slot)
+    const spA = readFromTable(dbInst, "survey_spaces", "identity", propInst.getSpaceIdentity(), false)[0];
+    // create clause key instance for premises
+    const ckInst = new ckC(dbInst, "premises", propInst.getSize(), propInst.getLocation, "current"); 
+    // first update inside the premises clause, putting in sf, floorAndSuite
+    premClauseBody = ckInst.getClauseBody();
+    const fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
     premClauseBody = premClauseBody.replace("<<SF>>", fmtsf);
     premClauseBody = premClauseBody.replace("<<FloorAndSuite>>", spA.floorandsuite);
+    // now update the template for premises, address, and client company
     updateTemplateBody("<<Premises>>", premClauseBody, docInst)
     updateTemplateBody("<<Address>>", spA.address, docInst);
-    updateTemplateBody("<<ClientCompany>>", tenantNameS, docInst);
-
+    updateTemplateBody("<<ClientCompany>>", propInst.getTenant(), docInst);
   } catch (err) {
     probS = `In ${fS}: ${err}`
     Logger.log(probS);
@@ -532,20 +454,17 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
  * @return {boolean} t/f - return true or false
  */
 // now uses ckC
-function handleExpenses(dbInst, docInst, propDetailInst,propInst) {
-
+function handleExpenses(dbInst, docInst, propDetailInst, propInst) {
   var fS = "handleExpenses";
+  // get clauseKeys from the global structure; update this when cks are added
   const inS = clauseKeyObjG.expenses;
 
-  var ckInst;
-  var repClauseS, proposalanswer, clausebody, replstruct;
+  var ck, ckInst, repClauseS, proposalanswer, clausebody, replstruct, ret, probS, elRepS, retRepS;
   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
-  var ret, probS, elRepS, retRepS;
   try {
-    // const propStruct = getPropStructFromName(dbInst, propNameS);
+    // when clauseKeyObjG is changed this hack can get eliminated
     const tempCKS = inS.slice(2, inS.length - 2);
     const clauseKeyA = tempCKS.split("','");
-    var ck;
     // create array of ckC instances, with each ck from expInS
     for (var i in clauseKeyA) {
       ck = clauseKeyA[i];
@@ -741,7 +660,7 @@ function handleOver(dbInst, docInst, propDetailInst, propInst) {
     var ck;
     for (var i in clauseKeyA) {
       ck = clauseKeyA[i];
-      ckInst = new ckC(dbInst, ck, propInst.getSize(),propInst.getLocation(), "current");
+      ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       replstruct = ckInst.getReplStruct();
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);

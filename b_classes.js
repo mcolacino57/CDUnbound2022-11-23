@@ -77,11 +77,15 @@ class proposalC {
       this.size = propStruct.ProposalSize;
       this.location = propStruct.ProposalLocation;
       this.tenant = propStruct.TenantName;
-      this.propDateS = propStruct.propDateS;
+      this.propDateS = propStruct.PropDateS;
+      this.spaceIdentity = propStruct.SpaceIdentity;
     } else {
       throw new Error(`in proposalC constructor, problem finding data for ${propName}`);
     }
 
+  }
+  getSpaceIdentity() {
+    return this.spaceIdentity
   }
   getName() {
     return this.name

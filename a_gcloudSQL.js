@@ -166,9 +166,6 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
  * Purpose: 
  *
  * @param  {Object} dbInst - instance of database class
- * @param {String} tableNameS - table to read
- * @param {String} colS - column to select on
- * @param {String} inListS - string in IN SQL format
  * @return {String} retS - return value
  * 
  * return value is in the form: 
