@@ -372,9 +372,6 @@ function handleTI(dbInst, docInst, propNameS, propDetailInst) {
       tiTerms = tiTerms.replace(/\n\n$/, '');
     }
     const docReplS = "<<TenantImprovements>>";
-    // if (!(docInst.locBody.toString.includes(docReplS))) {
-    //   throw new Error(`document is missing ${docReplS}`);
-    // }
     updateTemplateBody(docReplS, tiTerms, docInst);
 
   } catch (err) {
