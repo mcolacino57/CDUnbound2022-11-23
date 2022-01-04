@@ -5,13 +5,13 @@ testHandleOver,testHandleExpenses, testHandleBR,  userEmail , logStatusofData ,
 docID , foldID , propListInstG*/
 
 /*global Utilities , Logger  , databaseC , docC , proposalC,
- getCurrPropID_,  readFromTable , DriveApp , readInListFromTable,  maxRows , BetterLog ,
- HtmlService , saveAsJSON , readInClausesFromTable , propListC , ckC , getPropStructFromName , 
+ getCurrPropID_,  readFromTable , DriveApp ,  maxRows , BetterLog ,
+ HtmlService , saveAsJSON , readInClausesFromTable , propListC , ckC  , 
  propDetailC */
 // 210727 10:39
 
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
-const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
+// const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 // const userEmail = Session.getActiveUser().getEmail();
 const userEmail = "mcolacino@squarefoot.com";
@@ -27,8 +27,8 @@ const propListInstG = new propListC(dbInstG);
 /* UPDATE  these when form is modified especially when new clauses/clauseKeys are added */
 const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
-  security: "('secDeposit')",
-  overview: "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
+  // security: "('secDeposit')",
+  overview: "('secDeposit','useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
   ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
 };
 
@@ -90,13 +90,13 @@ function evalProposal(dbInst) {
     const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
 
-    ret = handleExpenses(dbInst, docInst, propNameS, propDetailInst);
+    ret = handleExpenses(dbInst, docInst, propDetailInst,propInst);
     logLoc ? Logger.log("Expenses: " + ret) : true;
     if (!ret) {
       throw new Error(`handleExpenses returned false`)
     }
 
-    ret = handleOver(dbInst, docInst, propSize);
+    ret = handleOver(dbInst, docInst, propNameS, propDetailInst,propInst);
     logLoc ? Logger.log("Over: " + ret) : true;
     if (!ret) {
       throw new Error(`handleOver returned false`)
@@ -108,7 +108,7 @@ function evalProposal(dbInst) {
       throw new Error(`handleTenAndPrem returned false`)
     }
 
-    ret = handleTI(dbInst, docInst, propSize);
+    ret = handleTI(dbInst, docInst, propDetailInst, propInst);
     logLoc ? Logger.log("TI: " + ret) : true;
     if (!ret) {
       throw new Error(`handleTI returned false`)
@@ -331,20 +331,22 @@ function handleJSON(dbInst, docInst) {
  */
 // clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
 
-function handleTI(dbInst, docInst, propNameS, propDetailInst) {
-  var fS = "handleTI",
-    probS, tiTerms = "";
+function handleTI(dbInst, docInst, propDetailInst, propInst) {
+  var fS = "handleTI";
+  const inS = clauseKeyObjG.ti;
+
+  var tiTerms = "";
+  var probS, ret;
   var ckInst;
   var proposalanswer, clausebody, replstruct;
-  var inS = clauseKeyObjG.ti;
   try {
-    const propStruct = getPropStructFromName(dbInst, propNameS);
+    // const propStruct = getPropStructFromName(dbInst, propNameS);
     const tempCKS = inS.slice(2, inS.length - 2);
     const clauseKeyA = tempCKS.split("','");
     var ck;
     for (var i in clauseKeyA) {
       ck = clauseKeyA[i];
-      ckInst = new ckC(dbInst, ck, propStruct.ProposalSize, propStruct.ProposalLocation, "current");
+      ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       replstruct = ckInst.getReplStruct();
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
@@ -372,7 +374,10 @@ function handleTI(dbInst, docInst, propNameS, propDetailInst) {
       tiTerms = tiTerms.replace(/\n\n$/, '');
     }
     const docReplS = "<<TenantImprovements>>";
-    updateTemplateBody(docReplS, tiTerms, docInst);
+    ret = updateTemplateBody(docReplS, tiTerms, docInst);
+    if (!ret) {
+      throw new Error(`In ${fS}: problem with updateTemplateBody `)
+    }
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -527,22 +532,24 @@ function handleTenAndPrem(dbInst, docInst, propIDS, propSize) {
  * @return {boolean} t/f - return true or false
  */
 // now uses ckC
-function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
+function handleExpenses(dbInst, docInst, propDetailInst,propInst) {
+
   var fS = "handleExpenses";
+  const inS = clauseKeyObjG.expenses;
+
   var ckInst;
   var repClauseS, proposalanswer, clausebody, replstruct;
-  const expInS = clauseKeyObjG.expenses;
   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
   var ret, probS, elRepS, retRepS;
   try {
-    const propStruct = getPropStructFromName(dbInst, propNameS);
-    const tempExpCKS = expInS.slice(2, expInS.length - 2);
-    const expClauseKeyA = tempExpCKS.split("','");
+    // const propStruct = getPropStructFromName(dbInst, propNameS);
+    const tempCKS = inS.slice(2, inS.length - 2);
+    const clauseKeyA = tempCKS.split("','");
     var ck;
     // create array of ckC instances, with each ck from expInS
-    for (var i in expClauseKeyA) {
-      ck = expClauseKeyA[i];
-      ckInst = new ckC(dbInst, ck, propStruct.ProposalSize, propStruct.ProposalLocation, "current");
+    for (var i in clauseKeyA) {
+      ck = clauseKeyA[i];
+      ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       replstruct = ckInst.getReplStruct();
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
@@ -661,6 +668,7 @@ function handleExpenses(dbInst, docInst, propNameS, propDetailInst) {
  * @return {Object} r - row object or false
  */
 
+// eslint-disable-next-line no-unused-vars
 function matchProposalSizeWithClause(propSize, ck, pdrs) {
   const fS = "matchProposalSizeWithClause";
   try {
@@ -716,48 +724,53 @@ function retRowF(findSize, ck, pdrs) {
  */
 // fixed to handle propSize
 
-function handleOver(dbInst, docInst, propSize) {
-  var fS = "handleOver";
-  var probS, repClauseS, repS, ret;
-  // first handle clauses, then direct replacements
+function handleOver(dbInst, docInst, propDetailInst, propInst) {
+  const fS = "handleOver";
+  const inS = clauseKeyObjG.overview;
+
+  // var tiTerms = "";
+  var probS, repS, ret, repClauseS;
+  var ckInst;
+  var proposalanswer, clausebody, replstruct;
   try {
-    // var overInsCl = "('secDeposit')";
-    var overInsCl = clauseKeyObjG.security;
-    var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
+    // first do security deposit
 
-    proposalDetailRows.forEach((pdRow) => {
-      var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFit) {
-        repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-        ret = updateTemplateBody(bestFit.replstruct, repClauseS, docInst);
-        if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-        }
-      }
-    });
-    // direct replacements: 
-    //var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
-    var overInsS = clauseKeyObjG.overview;
-    proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
-
-    proposalDetailRows.forEach((pdRow) => {
-      var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-      if (bestFit) {
-        if (bestFit.proposalclausekey === "commDate") {
-          // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
-          var dA = bestFit.proposalanswer.split('-');
+    // const propStruct = getPropStructFromName(dbInst, propNameS);
+    const tempCKS = inS.slice(2, inS.length - 2);
+    const clauseKeyA = tempCKS.split("','");
+    var ck;
+    for (var i in clauseKeyA) {
+      ck = clauseKeyA[i];
+      ckInst = new ckC(dbInst, ck, propInst.getSize(),propInst.getLocation(), "current");
+      replstruct = ckInst.getReplStruct();
+      clausebody = ckInst.getClauseBody();
+      proposalanswer = propDetailInst.getAnswerFromCK(ck);
+      if (!proposalanswer) continue; // didn't find this ck in prop_detail so continue to next
+      switch (ck) {
+        case "secDeposit":
+          repClauseS = clausebody.replace(replstruct, proposalanswer);
+          ret = updateTemplateBody(replstruct, repClauseS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+          }
+          break;
+        case "commDate":
+          var dA = proposalanswer.split('-');
           repS = `${dA[1]} /${dA[2]}/${dA[0]} `;
-        } else {
-          repS = bestFit.proposalanswer;
-        }
-        ret = updateTemplateBody(bestFit.replstruct, repS, docInst);
-        if (!ret) {
-          throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
-        }
-      }
-    });
-
-    ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+          ret = updateTemplateBody(replstruct, repS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
+          }
+          break;
+        default:
+          ret = updateTemplateBody(replstruct, proposalanswer, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
+          }
+          break;
+      } // end switch
+    } // end for
+    ret = updateTemplateBody("<<DateofProposal>>", propInst.getPropDateS, docInst);
     if (!ret) {
       throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
     }
@@ -765,10 +778,63 @@ function handleOver(dbInst, docInst, propSize) {
     probS = `In ${fS}: ${err} `
     Logger.log(probS);
     return false
+
   }
   return true
-
 }
+
+
+
+// first handle clauses, then direct replacements
+// try {
+//   // var overInsCl = "('secDeposit')";
+//   var overInsCl = clauseKeyObjG.security;
+//   var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
+
+//   proposalDetailRows.forEach((pdRow) => {
+//     var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//     if (bestFit) {
+//       repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
+//       ret = updateTemplateBody(bestFit.replstruct, repClauseS, docInst);
+//       if (!ret) {
+//         throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+//       }
+//     }
+//   });
+// direct replacements: 
+// //var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
+// var overInsS = clauseKeyObjG.overview;
+// proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
+
+// proposalDetailRows.forEach((pdRow) => {
+//   var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
+//   if (bestFit) {
+//     if (bestFit.proposalclausekey === "commDate") {
+//       // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
+//       var dA = bestFit.proposalanswer.split('-');
+//       repS = `${dA[1]} /${dA[2]}/${dA[0]} `;
+//     } else {
+//       repS = bestFit.proposalanswer;
+//     }
+//     ret = updateTemplateBody(bestFit.replstruct, repS, docInst);
+//     if (!ret) {
+//       throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
+//     }
+//   }
+// });
+
+// ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
+// if (!ret) {
+//   throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
+// }
+// } catch (err) {
+//   probS = `In ${fS}: ${err} `
+//   Logger.log(probS);
+//   return false
+// }
+// return true
+
+// }
 
 /**
  * Purpose: replace a chunk of text in the docInst, using replacement structure and replacement text
