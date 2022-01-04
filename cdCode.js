@@ -10,7 +10,7 @@ docID , foldID , propListInstG*/
  propDetailC */
 // 210727 10:39
 
-const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
+const todayS = Utilities.formatDate(new Date(), "GMT-4", "MMMM d, yyyy");
 // const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 // const userEmail = Session.getActiveUser().getEmail();
@@ -90,13 +90,13 @@ function evalProposal(dbInst) {
     const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
 
-    ret = handleExpenses(dbInst, docInst, propDetailInst,propInst);
+    ret = handleExpenses(dbInst, docInst, propDetailInst, propInst);
     logLoc ? Logger.log("Expenses: " + ret) : true;
     if (!ret) {
       throw new Error(`handleExpenses returned false`)
     }
 
-    ret = handleOver(dbInst, docInst, propNameS, propDetailInst,propInst);
+    ret = handleOver(dbInst, docInst, propDetailInst, propInst);
     logLoc ? Logger.log("Over: " + ret) : true;
     if (!ret) {
       throw new Error(`handleOver returned false`)
@@ -770,7 +770,7 @@ function handleOver(dbInst, docInst, propDetailInst, propInst) {
           break;
       } // end switch
     } // end for
-    ret = updateTemplateBody("<<DateofProposal>>", propInst.getPropDateS, docInst);
+    ret = updateTemplateBody("<<DateofProposal>>", propInst.getPropDateS(), docInst);
     if (!ret) {
       throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
     }
