@@ -120,7 +120,7 @@ function evalProposal(dbInst) {
     fName = "handleTenAndPrem";
     console.log(`${fName} completed successfully`);
 
-    ret = handleJSON(dbInst, docInst);
+    ret = handleJSON(docInst);
     logLoc ? Logger.log("JSON: " + ret) : true;
     if (!ret) {
       throw new Error(`handleJSON returned false`)
@@ -224,7 +224,7 @@ function handleBaseRent(dbInst, docInst, propInst) {
  * @param  {object} docInst - instance of docC
  * @return {boolean} t/f - return true or false
  */
-function handleJSON(dbInst, docInst) {
+function handleJSON(docInst) {
   var fS = "handleJSON",
     probS;
   var userPrefixS = userEmail.split('@')[0];
