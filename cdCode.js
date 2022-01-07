@@ -26,7 +26,7 @@ const propListInstG = new propListC(dbInstG);
 const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
   // security: "('secDeposit')",
-  overview: "('secDeposit','useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
+  overview: "('secDeposit','useType','llName','llbrokerName','proposalSalutation','recipientEmail','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
   ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
 };
 
@@ -426,7 +426,7 @@ function handleTenAndPrem(dbInst, docInst, propInst) {
     // create spA: record from survey_spaces: contains address, squareFeet, and floorAndSuite (in first slot)
     const spA = readFromTable(dbInst, "survey_spaces", "identity", propInst.getSpaceIdentity(), false)[0];
     // create clause key instance for premises
-    const ckInst = new ckC(dbInst, "premises", propInst.getSize(), propInst.getLocation, "current"); 
+    const ckInst = new ckC(dbInst, "premises", propInst.getSize(), propInst.getLocation, "current");
     // first update inside the premises clause, putting in sf, floorAndSuite
     premClauseBody = ckInst.getClauseBody();
     const fmtsf = new Intl.NumberFormat().format(spA.squarefeet)
@@ -679,6 +679,15 @@ function handleOver(dbInst, docInst, propDetailInst, propInst) {
           ret = updateTemplateBody(replstruct, repS, docInst);
           if (!ret) {
             throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
+          }
+          break;
+        case "recipientEmail":
+          if (proposalanswer != "") {
+            repS = `Sent Via E-mail: ${proposalanswer}`;
+          }
+          ret = updateTemplateBody(replstruct, repS, docInst);
+          if (!ret) {
+            throw new Error(`In ${fS}: problem with 'recipientEmail' in updateTemplateBody: ${ret} `)
           }
           break;
         default:
