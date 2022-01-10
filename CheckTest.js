@@ -4,7 +4,43 @@
 /*global logStatusofData, evalProposal , getCKThisForm , propDetailC
 chkMajorPropDetailCategories    , dbInstG ,
 UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
-onHtmlSubmit */
+onHtmlSubmit , DocumentApp */
+
+// eslint-disable-next-line no-unused-vars
+function removeOptions() {
+  const removeOptA = ["Right of First Offer \\(ROFO\\)", "Renewal Option"];
+  removeOptA.forEach((opS) => removeOptRows(opS))
+}
+
+/**
+ * Remove all the empty rows from all the tables in a document
+ *
+ * @param {String} documentId
+ */
+
+// eslint-disable-next-line no-unused-vars
+function removeOptRows(opS) {
+  const fS = "removeOptRows";
+  try {
+    const tables = DocumentApp.openById("1C8djjyUnG0lsgpOpbryP2EhLjhcyNkM1PegiM5xP778").getBody().getTables()
+    const regex = new RegExp(opS,"gi");
+    tables.forEach(function (table) {
+      var numberOfRows = table.getNumRows();
+      for (var rowIndex = 0; rowIndex < numberOfRows; rowIndex++) {
+        var nextRow = table.getRow(rowIndex);
+        var cellS = nextRow.getCell(0).getText();
+        if (regex.test(cellS)) {
+          table.removeRow(rowIndex);
+          numberOfRows--;
+        }        
+      } // For each row
+    })
+
+  } catch (error) {
+    throw new Error(`In ${fS}: ${error.message}`)
+  }
+
+}
 
 /* This tests the proposal detail class and creates an instance, using Ember at 25th proposal ID*/
 // eslint-disable-next-line no-unused-vars
@@ -38,13 +74,13 @@ function testHandleTenAndPrem() {
  */
 function testGetCKThisForm() {
   const dbInst = dbInstG;
-  var retS ="";
-  var ret = getCKThisForm(dbInst,"Create Document");
+  var retS = "";
+  var ret = getCKThisForm(dbInst, "Create Document");
   var l = ret.length;
-  for (var j = 0; j < l-1; j++){
-    retS=retS+(ret[j]+", ")
-}
-  retS = retS+ret[l-1];
+  for (var j = 0; j < l - 1; j++) {
+    retS = retS + (ret[j] + ", ")
+  }
+  retS = retS + ret[l - 1];
   // fieldS_G==retS ? console.log("fieldS_G equals retS"): console.log("fieldS_G not equal to retS");
   console.log(`In testGetCKThisForm: ${retS}`)
 }
@@ -61,7 +97,7 @@ function runTests() {
     test.assert(testPropDetailA(dbInst, propID), `testPropDetail -> propID ${propID} `);
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
     test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
-    test.assert(testEvalProposal(),`evalProposal -> propID ${propID}`)
+    test.assert(testEvalProposal(), `evalProposal -> propID ${propID}`)
 
   }
 }
@@ -99,12 +135,12 @@ function testHandleExpenses() {
 // eslint-disable-next-line no-unused-vars
 function testHandleBR() {
   const dbInst = dbInstG;
-    var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
-    var docInst = new docC(docID, foldID);
-    // eslint-disable-next-line no-undef
-    var ret = handleBaseRent(dbInst, docInst, propInst);
-    return ret
-  
+  var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
+  var docInst = new docC(docID, foldID);
+  // eslint-disable-next-line no-undef
+  var ret = handleBaseRent(dbInst, docInst, propInst);
+  return ret
+
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -118,7 +154,7 @@ function testReadInClausesFromTable() {
 
 // eslint-disable-next-line no-unused-vars
 function testZeroValue() {
-  
+
   var ret = checkZeroValue("")
   console.log(ret);
   ret = checkZeroValue("0")
@@ -131,11 +167,11 @@ function testZeroValue() {
   console.log(ret);
   ret = checkZeroValue("0.00")
   console.log(ret);
-   ret = checkZeroValue("3.00")
+  ret = checkZeroValue("3.00")
   console.log(ret);
-   ret = checkZeroValue("3")
+  ret = checkZeroValue("3")
   console.log(ret);
-   ret = checkZeroValue("3.")
+  ret = checkZeroValue("3.")
   console.log(ret);
 
 }
