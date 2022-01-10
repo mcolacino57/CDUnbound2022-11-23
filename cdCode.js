@@ -27,7 +27,8 @@ const clauseKeyObjG = {
   expenses: "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentIncCharge')",
   // security: "('secDeposit')",
   overview: "('secDeposit','useType','llName','llbrokerName','proposalSalutation','recipientEmail','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
-  ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
+  ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')",
+  opt: "('optRenew','optYears','optROFO','optROFR')"
 };
 
 const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
@@ -132,6 +133,14 @@ function evalProposal(dbInst) {
       throw new Error(`handleBaseRent returned false`)
     }
 
+    ret = handleOpt(dbInst, docInst, propDetailInst, propInst);
+    if (!ret) {
+      throw new Error(`handleOpt returned false`)
+    }
+    
+    fName = "handleTenAndPrem";
+    console.log(`${fName} completed successfully`);
+
 
   } catch (err) {
     Logger.log(`In ${fS}: ${err}`);
@@ -142,7 +151,6 @@ function evalProposal(dbInst) {
   return true
 }
 
-var logHandleBaseRent = false;
 /**
  * Purpose: Handle base rent
  *
@@ -151,9 +159,11 @@ var logHandleBaseRent = false;
  * @param  {object} propInst - proposalC instance
  * @@return {boolean} return - true or false
  */
+ const disp_handleBaseRent = false;
+
 function handleBaseRent(dbInst, docInst, propInst) {
   var fS = "handleBaseRent";
-  var locLog = logHandleBaseRent;
+  var locLog = disp_handleBaseRent;
 
   try {
     var propID = propInst.getID();
@@ -765,6 +775,75 @@ function handleOver(dbInst, docInst, propDetailInst, propInst) {
 // }
 
 /**
+ * Purpose: Handle option stuff, which includes
+ * renewal (and years), ROFO, and ROFR
+ *
+ * @param  {Object} dbInst - instance of database class
+ * @param  {Object} docInst - instance of document class
+ * @return {boolean} return - true or false
+ */
+// clauseKeyObjG.opt -> opt: "('optRenew','optYears','optROFO','optROFR')"
+
+function handleOpt(dbInst, docInst, propDetailInst, propInst) {
+  var fS = "handleOpt";
+  const inS = clauseKeyObjG.opt;
+
+  var optTerms = "";
+  var probS, ret;
+  var ckInst;
+  var proposalanswer, clausebody, replstruct;
+  try {
+    // const propStruct = getPropStructFromName(dbInst, propNameS);
+    const tempCKS = inS.slice(2, inS.length - 2);
+    const clauseKeyA = tempCKS.split("','");
+    var ck;
+    for (var i in clauseKeyA) {
+      ck = clauseKeyA[i];
+      ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
+      replstruct = ckInst.getReplStruct();
+      clausebody = ckInst.getClauseBody();
+      proposalanswer = propDetailInst.getAnswerFromCK(ck);
+      if (!proposalanswer) continue; // didn't find this ck in prop_detail so continue to next
+      switch (ck) {
+        case "optRenew":  // replaced within answer clausebody using optYears, then add
+          if (checkZeroValue(proposalanswer)) {
+            const tiDollars = curr_formatter.format(proposalanswer);
+            optTerms = optTerms + clausebody.replace(replstruct, tiDollars) + "\n\n";
+          }
+          break;
+        case "optROFO": // just add to the end
+          if (proposalanswer !== "") {
+            optTerms = optTerms + clausebody.replace(replstruct, proposalanswer) + "\n\n";
+          }
+          break;
+          case "optROFR": // just add to the end
+            if (proposalanswer !== "") {
+              optTerms = optTerms + clausebody.replace(replstruct, proposalanswer) + "\n\n";
+            }
+            break;
+        default:
+          optTerms = optTerms + clausebody.replace(replstruct, proposalanswer) + "\n\n";
+          break;
+      } // end switch
+    } // end for
+
+    if (optTerms != "") {
+      optTerms = optTerms.replace(/\n\n$/, '');
+    }
+    const docReplS = "<<Options>>";
+    ret = updateTemplateBody(docReplS, optTerms, docInst);
+    if (!ret) {
+      throw new Error(`In ${fS}: problem with updateTemplateBody `)
+    }
+  } catch (err) {
+    probS = `In ${fS}: ${err}`
+    Logger.log(probS);
+    return false
+  }
+  return true
+}
+
+/**
  * Purpose: replace a chunk of text in the docInst, using replacement structure and replacement text
  *
  * @param  {String} replStructure - string in the form <<replace_me>>
@@ -945,7 +1024,7 @@ function processForm(formObject) {
   return ret;
 }
 
-/*************************** form utilities ***********************/
+/*************************** utilities ***********************/
 // eslint-disable-next-line no-unused-vars
 function hideSpinner() {
   console.log("attempting to hide spinner");
