@@ -255,6 +255,9 @@ class docC {
   getBodyText() {
     return this.locBody.getText()
   }
+  getNewDocID() {
+    return this.copy.getID();
+  }
 
   saveAndCloseTemplate() {
 

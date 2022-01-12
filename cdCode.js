@@ -3,8 +3,8 @@ docID , foldID , propListInstG */
 
 /*global Utilities , Logger  , DriveApp , BetterLog , HtmlService , 
 databaseC , docC , proposalC, propListC , ckC  , propDetailC ,
- getCurrPropID_,  readFromTable ,   maxRows , difference ,
- saveAsJSON  , 
+ getCurrPropID_,  readFromTable ,   maxRows , difference , 
+ saveAsJSON  , optRowsStructG , removeOptRows
  */
 // 210727 10:39
 
@@ -790,9 +790,9 @@ function handleOver(dbInst, docInst, propDetailInst, propInst) {
 function handleOpt(dbInst, docInst, propDetailInst, propInst) {
   var fS = "handleOpt";
   // const inS = clauseKeyObjG.opt;
-  var ckSet = new Set(["optRenew", "optROFR", "optROFO", "optTerm"]);
+  var ckSet = new Set(Object.keys(optRowsStructG)); // in removeOptRows.js
   var knockOutSet = new Set();
-  const clauseKeyA = ["optRenew", "optROFR", "optROFO", "optTerm"];
+  // const clauseKeyA = ["optRenew", "optROFR", "optROFO", "optTerm"];
    
 
   var probS, ret;
@@ -803,23 +803,29 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
     // const tempCKS = inS.slice(2, inS.length - 2);
     // const clauseKeyA = tempCKS.split("','");
     var ck, optYears,repClauseS;
-    for (var i in clauseKeyA) {
-      ck = clauseKeyA[i];
+    for (ck in ckSet) {
+      // ck = clauseKeyA[i];
       ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
       if (!proposalanswer) continue; // didn't find this ck in prop_detail so continue to next
       switch (ck) {
-        case "optRenew": // replaced within answer clausebody using optYears, then add
+        case "optRenew": 
+          // get number of years as the answer to ck "optYears"
           optYears = propDetailInst.getAnswerFromCK("optYears");
+          // create a ckInst for "optYears"
           ckInstYears = new ckC(dbInst, "optYears", propInst.getSize(), propInst.getLocation(), "current");
+          // get the replStruct for that
           replstruct = ckInstYears.getReplStruct();
+          // use this replStruct to update the clausebody for "optRenew"
           repClauseS = clausebody.replace(replstruct, optYears);
           console.log(`clausebody is ${clausebody}`);
+          // use the updated clausebody in repClauseS to update the template body
           ret = updateTemplateBody("<<renewalOption>>", repClauseS, docInst);
           if (!ret) {
             throw new Error(`In ${fS}: problem with updateTemplateBody for optRenew `)
           }
+          // add to knockOutSet, which then removes this from the delete list below
           knockOutSet.add("optRenew");
           break;
         case "optROFO": // just add to the end
@@ -846,9 +852,12 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
       } // end switch
     } // end for
 // delete provisions here
-    const removeOptSet = new Set(difference(ckSet, knockOutSet));
-    
-    console.log(`removeOptSet: ${removeOptSet}`)
+    const deleteOptSet = new Set(difference(ckSet, knockOutSet));
+    for (ck in deleteOptSet) {
+      ret = removeOptRows(docInst, ck);
+  
+    }
+    console.log(`removeOptSet: ${deleteOptSet}`)
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
