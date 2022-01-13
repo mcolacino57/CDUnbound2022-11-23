@@ -4,13 +4,10 @@
 /*global logStatusofData, evalProposal , getCKThisForm , propDetailC
 chkMajorPropDetailCategories    , dbInstG ,
 UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
-onHtmlSubmit  , removeOptRows*/
+onHtmlSubmit    */
 
-// eslint-disable-next-line no-unused-vars
-function removeOptions() {
-  const removeOptA = ["Right of First Offer \\(ROFO\\)", "Renewal Option"];
-  removeOptA.forEach((opS) => removeOptRows(opS))
-}
+
+
 
 /* This tests the proposal detail class and creates an instance, using Ember at 25th proposal ID*/
 // eslint-disable-next-line no-unused-vars

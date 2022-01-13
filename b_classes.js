@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 /*global Logger, getPropSize,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities ,
 getProposalNamesAndIDs , getPropSize , getPropLocation , createPropDetailA ,
-getPropStructFromName */
+getPropStructFromName , matchProposalSizeWithClause */
 /*exported ckStringC, proposalC,brokerC,docC,responseC,databaseC, propListC   */
 
 class propDetailC {
@@ -248,6 +248,8 @@ class docC {
     this.ds = formatCurrentDate();
     this.copy = this.file.makeCopy(this.docName + " " + this.ds, this.folder);
     this.copyName = this.copy.getName()
+    this.locID = this.copy.getId();
+    console.log(`this locID ${this.locID}`)
     this.locDocument = DocumentApp.openById(this.copy.getId());
     this.locBody = this.locDocument.getBody();
   }
@@ -256,7 +258,10 @@ class docC {
     return this.locBody.getText()
   }
   getNewDocID() {
-    return this.copy.getID();
+    return this.locID
+  }
+  getLocDoc() {
+    return this.locDocument
   }
 
   saveAndCloseTemplate() {
@@ -348,28 +353,47 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
     var replStruct = "";
     var probS = "";
     var stmt;
-    var results;
+    var results, resA = [], cl="";
     // Get all the clauses that match the ck and have correct version 
-    var qryS = `select ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseSize = '${proposalSize}' and ClauseVersion='${version}';`;
+    var qryS = `select ClauseID, ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseVersion='${version}';`;
     const locConn = dbInst.getconn();
     stmt = locConn.createStatement();
     results = stmt.executeQuery(qryS);
     if (!results.next()) {
-      throw new Error(`for ck ${ck} and proposalSize ${proposalSize} and version ${version}, missing clause`);
+      throw new Error(`for ck ${ck} and version ${version}, missing clause`);
     }
     results.beforeFirst();
-    results.next();
-    const clauseLocation = results.getString("ClauseLocation");
-    if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')) {
-      clauseBody = results.getString("ClauseBody");
-      clauseSection = results.getString("Section");
-    } else {
-      throw new Error(`for ck ${ck} and proposalLocation ${proposalLocation} missing clause`)
+    while (results.next()) {
+      // first check to see if this row matches location or generic and if not continue
+      const clauseLocation = results.getString("ClauseLocation");
+      if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')){
+        cl = proposalLocation;
+      }
+      else { continue }
+      // gather up all the data and make an object of it 
+      var clauseRow = {
+        clauseID: results.getString("ClauseID"),
+        clauseKey : ck,
+        clauseBody: results.getString("ClauseBody"),
+        clauseSize: results.getString("ClauseSize"),
+        clauseLocation: cl,
+        section : results.getString("Section"),
+        clauseVersion : version
+      }
+    
+      resA.push(clauseRow);
     }
+    if (resA.length == 0) { // no matching clauses found so throw an error
+      throw new Error(`for ck ${ck} size ${proposalSize} / location ${proposalLocation} missing clause`)
+      // have now created an array of one or more of these structures 
+    }
+    // could be several rows that match (with different sizes) so select the best fit
+    var bestFitRow = matchProposalSizeWithClause(proposalSize, resA);
+
   } catch (err) {
-    throw new Error(err.message);
+    throw new Error(err.message)
   }
-  return [clauseBody, clauseSection]
+  return [bestFitRow.clauseBody, bestFitRow.clauseSection]
 }
 
 /**

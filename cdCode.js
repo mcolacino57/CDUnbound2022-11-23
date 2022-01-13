@@ -266,80 +266,6 @@ function handleJSON(docInst) {
   return true
 }
 
-// /**
-//  * Purpose: Handle TI stuff, which includes
-//  * Allowance, Freight Access, and other TI conditions
-//  *
-//  * @param  {Object} dbInst - instance of database class
-//  * @param  {Object} docInst - instance of document class
-//  * @return {boolean} return - true or false
-//  */
-// // clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
-
-// function handleTI(dbInst, docInst, propSize) {
-//   var fS = "handleTI",
-//     probS, bestFitRow;
-//   var tiInS = clauseKeyObjG.ti;
-//   try {
-//     var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", tiInS);
-
-//     var tiTerms = "";
-//     // allowance--comes first always
-//     proposalDetailRows.forEach(pdRow => {
-//       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//       if (bestFitRow.proposalclausekey === "tiAllow" && checkZeroValue(bestFitRow.proposalanswer)) {
-//         if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-//           throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-//         }
-//         var tiDollars = curr_formatter.format(bestFitRow.proposalanswer);
-//         // replstruct should be <<TenantImprovementAllowance>> getting replaced in the clausebody
-//         // which then gets added to tiTerms as the first chunk
-//         tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, tiDollars) + "\n\n";
-//       }
-//     });
-//     // work--comes next
-//     proposalDetailRows.forEach(pdRow => {
-//       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//       if (bestFitRow.proposalclausekey === "llWork" && bestFitRow.proposalanswer != "") {
-//         if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-//           throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-//         }
-//         tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-
-//       }
-
-//     });
-//     //additional provisions--after and unordered
-//     proposalDetailRows.forEach(pdRow => {
-//       bestFitRow = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//       if (bestFitRow) {
-//         if (bestFitRow.proposalclausekey !== "llWork" && bestFitRow.proposalclausekey !== "tiAllow") {
-//           if (!(bestFitRow.clausebody.includes(bestFitRow.replstruct))) {
-//             throw new Error(`clause is missing ${bestFitRow.replstruct}`);
-//           }
-//           tiTerms = tiTerms + bestFitRow.clausebody.replace(bestFitRow.replstruct, bestFitRow.proposalanswer) + "\n\n";
-//         }
-//       }
-//     });
-
-//     //if(tiTerms !=""){ tiTerms = tiTerms.slice(0, -2);}
-//     if (tiTerms != "") {
-//       tiTerms = tiTerms.replace(/\n\n$/, '');
-//     }
-//     const docReplS = "<<TenantImprovements>>";
-//     // if (!(docInst.locBody.toString.includes(docReplS))) {
-//     //   throw new Error(`document is missing ${docReplS}`);
-//     // }
-//     updateTemplateBody(docReplS, tiTerms, docInst);
-
-//   } catch (err) {
-//     probS = `In ${fS}: ${err}`
-//     Logger.log(probS);
-//     return false
-//   }
-//   return true
-// }
-
 /**
  * Purpose: Handle TI stuff, which includes
  * Allowance, Freight Access, and other TI conditions
@@ -526,125 +452,6 @@ function handleExpenses(dbInst, docInst, propDetailInst, propInst) {
 }
 
 
-// /**
-//  * Purpose: Handles operating expenses, real estate taxes, and electric
-//  *
-//  * @param  {Object} dbInst - instance of databaseC
-//  * @param  {Object} docInst - instance of documenC
-//  * @param  {string} propSize - size of proposal
-//  * @return {boolean} t/f - return true or false
-//  */
-// // fixed to include propSize
-// function handleExpenses(dbInst, docInst, propSize) {
-//   var fS = "handleExpenses";
-//   var proposalDetailRows = [];
-//   // all clauseKeys in expenses UPDATE if Operating Expenses form update
-//   // when working change this to extract from ck database
-//   var expInS = clauseKeyObjG.expenses
-//   // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
-//   var repClauseS, ret, probS, elRepS, retRepS;
-//   try {
-//     // could change query that generates prop_detail_ex to only
-//     // include current proposal, or get the current proposal here
-//     // and filter out, or write a query here directly which has the dis-
-//     // advantage of not excapsulating db calls within gcloudSQL
-
-//     proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", expInS);
-//     proposalDetailRows.forEach(pdRow => {
-//       var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//       if (bestFit) {
-//         switch (bestFit.section) {
-//           case "OperatingExpenses":
-//             repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-//             ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-//             if (!ret) {
-//               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-//             }
-//             break;
-//           case "Electric":
-//             if (bestFit.proposalclausekey === "elecRentInc") {
-//               elRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-//             } else {
-//               elRepS = bestFit.clausebody;
-//             }
-//             ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
-//             if (!ret) {
-//               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-//             }
-//             break;
-//           case "RealEstateTaxes":
-//             retRepS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-//             ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
-//             if (!ret) {
-//               throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-//             }
-//         }
-//       }
-//     });
-//   } catch (err) {
-//     probS = `In ${fS}: ${err} `
-//     Logger.log(probS);
-//     return false
-//   }
-//   return true
-// }
-
-/**
- * Purpose: takes a proposal size, a clausekey, and a set of rows from
- * the prop_detail_ex view and tests from L->M->S to find the best
- * match, throwing an error if there are no matches
- *
- * @param  {String} propSize - param
- * @param  {String} ck - clause key
- * @param  {Object[]} pdrs - proposal detail rows
- * @return {Object} r - row object or false
- */
-
-// eslint-disable-next-line no-unused-vars
-function matchProposalSizeWithClause(propSize, ck, pdrs) {
-  const fS = "matchProposalSizeWithClause";
-  try {
-    var r = "";
-    var probS = `ck ${ck} and clause size ${propSize} not found`
-    switch (propSize) {
-      case "L":
-        // find exact match if possible
-        r = retRowF("L", ck, pdrs);
-        if (r) return r;
-        r = retRowF("M", ck, pdrs);
-        if (r) return r;
-        r = retRowF("S", ck, pdrs);
-        if (r) return r;
-        throw new Error(probS)
-      case "M":
-        // find exact match if possible
-        r = retRowF("M", ck, pdrs);
-        if (r) return r;
-        r = retRowF("S", ck, pdrs);
-        if (r) return r;
-        throw new Error(probS)
-      case "S":
-        r = retRowF("S", ck, pdrs);
-        if (r) return r;
-        throw new Error(probS)
-    } // end switch
-
-  } // end try
-  catch (err) {
-    const probS = `In ${fS}: ${err} `;
-    Logger.log(probS);
-  }
-  // if we haven't returned above it measn that we didn't find any matches
-  return false
-}
-
-function retRowF(findSize, ck, pdrs) {
-  for (var i = 0; i < pdrs.length; i++) {
-    if (pdrs[i].proposalclausekey === ck && pdrs[i].clausesize === findSize) return pdrs[i]
-  }
-  return false
-}
-
 /**
  * 
  * Purpose: Replaces elements from  Proposal Start and Proposal Overview, including DateOfProposal
@@ -724,59 +531,6 @@ function handleOver(dbInst, docInst, propDetailInst, propInst) {
   return true
 }
 
-
-
-// first handle clauses, then direct replacements
-// try {
-//   // var overInsCl = "('secDeposit')";
-//   var overInsCl = clauseKeyObjG.security;
-//   var proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsCl);
-
-//   proposalDetailRows.forEach((pdRow) => {
-//     var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//     if (bestFit) {
-//       repClauseS = bestFit.clausebody.replace(bestFit.replstruct, bestFit.proposalanswer);
-//       ret = updateTemplateBody(bestFit.replstruct, repClauseS, docInst);
-//       if (!ret) {
-//         throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-//       }
-//     }
-//   });
-// direct replacements: 
-// //var overInsS = "('useType','llName','llbrokerName','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')";
-// var overInsS = clauseKeyObjG.overview;
-// proposalDetailRows = readInListFromTable(dbInst, "prop_detail_ex", "ProposalClauseKey", overInsS);
-
-// proposalDetailRows.forEach((pdRow) => {
-//   var bestFit = matchProposalSizeWithClause(propSize, pdRow.proposalclausekey, proposalDetailRows);
-//   if (bestFit) {
-//     if (bestFit.proposalclausekey === "commDate") {
-//       // var repS = Utilities.formatDate(new Date(pd.proposalanswer), "GMT-4", "MM/dd/yyyy");
-//       var dA = bestFit.proposalanswer.split('-');
-//       repS = `${dA[1]} /${dA[2]}/${dA[0]} `;
-//     } else {
-//       repS = bestFit.proposalanswer;
-//     }
-//     ret = updateTemplateBody(bestFit.replstruct, repS, docInst);
-//     if (!ret) {
-//       throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
-//     }
-//   }
-// });
-
-// ret = updateTemplateBody("<<DateofProposal>>", propDateS, docInst);
-// if (!ret) {
-//   throw new Error(`In ${fS}: problem with updateTemplateBody: ${ret} `)
-// }
-// } catch (err) {
-//   probS = `In ${fS}: ${err} `
-//   Logger.log(probS);
-//   return false
-// }
-// return true
-
-// }
-
 /**
  * Purpose: Handle option stuff, which includes
  * renewal (and years), ROFO, and ROFR
@@ -802,8 +556,8 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
     // const propStruct = getPropStructFromName(dbInst, propNameS);
     // const tempCKS = inS.slice(2, inS.length - 2);
     // const clauseKeyA = tempCKS.split("','");
-    var ck, optYears,repClauseS;
-    for (ck in ckSet) {
+    var optYears,repClauseS;
+    for (let ck of ckSet) {
       // ck = clauseKeyA[i];
       ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       clausebody = ckInst.getClauseBody();
@@ -853,7 +607,7 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
     } // end for
 // delete provisions here
     const deleteOptSet = new Set(difference(ckSet, knockOutSet));
-    for (ck in deleteOptSet) {
+    for (let ck of deleteOptSet) {
       ret = removeOptRows(docInst, ck);
   
     }
