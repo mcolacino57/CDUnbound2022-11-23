@@ -573,7 +573,6 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
           replstruct = ckInstYears.getReplStruct();
           // use this replStruct to update the clausebody for "optRenew"
           repClauseS = clausebody.replace(replstruct, optYears);
-          console.log(`clausebody is ${clausebody}`);
           // use the updated clausebody in repClauseS to update the template body
           ret = updateTemplateBody("<<renewalOption>>", repClauseS, docInst);
           if (!ret) {
@@ -611,7 +610,7 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
       ret = removeOptRows(docInst, ck);
   
     }
-    console.log(`removeOptSet: ${deleteOptSet}`)
+    // console.log(`removeOptSet: ${deleteOptSet}`)
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
