@@ -393,7 +393,7 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
   } catch (err) {
     throw new Error(err.message)
   }
-  return [bestFitRow.clauseBody, bestFitRow.clauseSection]
+  return [bestFitRow.clauseBody, bestFitRow.section]
 }
 
 /**
