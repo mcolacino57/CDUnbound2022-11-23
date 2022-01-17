@@ -29,8 +29,12 @@ const clauseKeyObjG = {
   // security: "('secDeposit')",
   overview: "('secDeposit','useType','llName','llbrokerName','proposalSalutation','recipientEmail','llbrokerCo','llbrokerAddr','commDate','leaseTerm','earlyAccess')",
   ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')",
-  opt: "('optRenew','optYears','optROFO','optROFR')"
+  opt: "('optRenew','optYears','optROFO','optROFR')",
+  park: "('parkUnreservedNum','parkUnreservedRatio','parkUnreservedCost','parkReservedNum',\
+        'parkReservedRatio','parkReservedCost','parkMaxEscPercent',parkDescription)"
 };
+
+
 
 const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
 // eslint-disable-next-line no-global-assign
@@ -140,10 +144,15 @@ function evalProposal(dbInst) {
     if (!ret) {
       throw new Error(`handleOpt returned false`)
     }
-
     fName = "handleOpt";
     console.log(`${fName} completed successfully`);
 
+    ret = handleParking(dbInst, docInst, propDetailInst, propInst);
+    if (!ret) {
+      throw new Error(`handleParking returned false`)
+    }
+    fName = "handleParking";
+    console.log(`${fName} completed successfully`);
 
   } catch (err) {
     Logger.log(`In ${fS}: ${err}`);
@@ -547,16 +556,16 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
   var ckSet = new Set(Object.keys(optRowsStructG)); // in removeOptRows.js
   var knockOutSet = new Set();
   // const clauseKeyA = ["optRenew", "optROFR", "optROFO", "optTerm"];
-   
+
 
   var probS, ret;
-  var ckInst,ckInstYears;
+  var ckInst, ckInstYears;
   var proposalanswer, clausebody, replstruct;
   try {
     // const propStruct = getPropStructFromName(dbInst, propNameS);
     // const tempCKS = inS.slice(2, inS.length - 2);
     // const clauseKeyA = tempCKS.split("','");
-    var optYears,repClauseS;
+    var optYears, repClauseS;
     for (let ck of ckSet) {
       // ck = clauseKeyA[i];
       ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
@@ -564,7 +573,7 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
       if (!proposalanswer) continue; // didn't find this ck in prop_detail so continue to next
       switch (ck) {
-        case "optRenew": 
+        case "optRenew":
           // get number of years as the answer to ck "optYears"
           optYears = propDetailInst.getAnswerFromCK("optYears");
           // create a ckInst for "optYears"
@@ -604,13 +613,69 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
           break;
       } // end switch
     } // end for
-// delete provisions here
+    // delete provisions here
     const deleteOptSet = new Set(difference(ckSet, knockOutSet));
     for (let ck of deleteOptSet) {
       ret = removeOptRows(docInst, ck);
-  
     }
     // console.log(`removeOptSet: ${deleteOptSet}`)
+
+  } catch (err) {
+    probS = `In ${fS}: ${err}`
+    Logger.log(probS);
+    return false
+  }
+  return true
+}
+
+
+/**
+ * Purpose: Handle Parking stuff, which includes
+ *
+ * @param  {Object} dbInst - instance of database class
+ * @param  {Object} docInst - instance of document class
+ * @param  {object} propDetailInst -- instance of propDetailC 
+ * @return {boolean} return - true or false
+ */
+// clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
+
+function handleParking(dbInst, docInst, propDetailInst, propInst) {
+  var fS = "handleParking";
+  const inS = clauseKeyObjG.park;
+  try {
+    var parkTerms = "";
+    var probS, ret, proposalanswer, clausebody, replstruct, ckInst, ck;
+    const location = propInst.getLocation();
+    const tempCKS = inS.slice(2, inS.length - 2);
+    const clauseKeyA = tempCKS.split("','");
+    // clauseKeyA now has all ck in Parking
+    var ck;
+    if (location !== "LA" || location !== "Generic") {
+      ret = removeParkRows(dbInst, "parkGeneral");
+      return
+    }
+    // else we have LA or generic and can continue
+
+    // first get the parkGeneral clauseBody and replStruct (<<parkGeneral>>) if it exists
+    const ckInstParkGen = new ckC(dbInst, "parkGeneral", propInst.getSize(), propInst.getLocation(), "current");
+    var mainClause = ckInstParkGen.getClauseBoday();
+    const parkCKA = ["parkUnreservedRatio", "parkReservedRatio", "parkUnreservedCost", "parkReservedCost", "parkMaxEscPercent"];
+
+  for (var i in clauseKeyA) {
+    ck = clauseKeyA[i];
+    ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
+    replstruct = ckInst.getReplStruct();
+    clausebody = ckInst.getClauseBody();
+    proposalanswer = propDetailInst.getAnswerFromCK(ck);
+    if (parkCAA.includes(ck) && proposalanswer !== "") {
+          mainClause = mainClause.replace(replstruct, proposalanswer);
+      }
+    } // end for
+
+    ret = updateTemplateBody("<<parkGeneral>>", mainClause, docInst);
+    if (!ret) {
+      throw new Error(`In ${fS}: problem with updateTemplateBody `)
+    }
 
   } catch (err) {
     probS = `In ${fS}: ${err}`
@@ -723,6 +788,7 @@ const disp_doGet = false;
 
 
 /************************Utilities *********************** */
+
 const curr_formatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -815,23 +881,6 @@ function showSpinner() {
 
   document.getElementById('spindiv')
     .style.visibility = 'visible';
-}
-
-/**
- * Purpose: take the htmlFormObject and "fix" it so that it works. Each form
- * will have slightly different code, but for TI it consists of a stub
- * 
- *
- * @param  {object} htmlFormObject - from processForm
- * @return {String} retS - return value
- */
-const log_xfHtmlObj = false;
-// eslint-disable-next-line no-unused-vars
-function xfHtmlObj(htmlFormObject) {
-  var fS = "xfHtmlObj";
-
-  log_xfHtmlObj ? Logger.log(`Returning from ${fS} with ${JSON.stringify(htmlFormObject)} `) : true;
-  return htmlFormObject;
 }
 
 /**
