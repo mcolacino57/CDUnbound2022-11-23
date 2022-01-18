@@ -93,8 +93,9 @@ function evalProposal(dbInst) {
     const propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
     // const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
+    const ckSectionInst = new ckLocalSectionAC();
 
-    ret = handleExpenses(dbInst, docInst, propDetailInst, propInst);
+    ret = handleExpenses(dbInst, docInst, propDetailInst, propInst, ckSectionInst);
     logLoc ? Logger.log("Expenses: " + ret) : true;
     if (!ret) {
       throw new Error(`handleExpenses returned false`)
@@ -147,7 +148,7 @@ function evalProposal(dbInst) {
     fName = "handleOpt";
     console.log(`${fName} completed successfully`);
 
-    ret = handleParking(dbInst, docInst, propDetailInst, propInst);
+    ret = handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst);
     if (!ret) {
       throw new Error(`handleParking returned false`)
     }
@@ -398,60 +399,59 @@ function handleTenAndPrem(dbInst, docInst, propInst) {
  * @param  {Object} dbInst - instance of databaseC
  * @param  {Object} docInst - instance of documenC
  * @param  {string} propNameS - name of proposal
- * @param  {objet}  propDetailInst - instance of prop detail
+ * @param  {object} propDetailInst - instance of prop detail
+ * @param  {object} ckSectionInst -- instance of ckSectionAC
  * @return {boolean} t/f - return true or false
  */
 // now uses ckC
-function handleExpenses(dbInst, docInst, propDetailInst, propInst) {
+function handleExpenses(dbInst, docInst, propDetailInst, propInst,ckSectionInst) {
   var fS = "handleExpenses";
   // get clauseKeys from the global structure; update this when cks are added
-  const inS = clauseKeyObjG.expenses;
+  //const inS = clauseKeyObjG.expenses;
 
-  var ck, ckInst, repClauseS, proposalanswer, clausebody, replstruct, ret, probS, elRepS, retRepS;
-  // var expInS = "('oePerInc','oeBaseYear','retBaseYear','elecDirect','elecRentInc','elecSubmeter','elecRentInc')";
+  var ckInst, repClauseS, proposalanswer, clausebody, replstruct, ret, probS, elRepS, retRepS;
+  const location = propInst.getLocation();
   try {
-    // when clauseKeyObjG is changed this hack can get eliminated
-    const tempCKS = inS.slice(2, inS.length - 2);
-    const clauseKeyA = tempCKS.split("','");
+    const clauseKeyA = ckSectionInst.getExpA(location);
     // create array of ckC instances, with each ck from expInS
-    for (var i in clauseKeyA) {
-      ck = clauseKeyA[i];
-      ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
+    clauseKeyA.forEach(ck => {
+      ckInst = new ckC(dbInst, ck, propInst.getSize(), location, "current");
       replstruct = ckInst.getReplStruct();
       clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
-      if (!proposalanswer) continue;
-      switch (ckInst.getSection()) {
-        case "OperatingExpenses":
-          repClauseS = clausebody.replace(replstruct, proposalanswer);
-          ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
-          if (!ret) {
-            throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
-          }
-          break;
-        case "Electric":
-          // special case (two level replace) for elecRentInc
-          if (ck === "elecRentInc") {
-            elRepS = clausebody.replace(replstruct, proposalanswer);
-          } else {
-            elRepS = clausebody;
-          }
-          ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
-          if (!ret) {
-            throw new Error(`In ${fS}: problem with updateTemplateBody on ${elRepS} `)
-          }
-          break;
-        case "RealEstateTaxes":
-          retRepS = clausebody.replace(replstruct, proposalanswer);
-          ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
-          if (!ret) {
-            throw new Error(`In ${fS}: problem with updateTemplateBody on ${retRepS} `)
-          }
-          break;
-        default:
-          break;
-      }
-    }
+      if (proposalanswer) {
+        switch (ckInst.getSection()) {
+          case "OperatingExpenses":
+            repClauseS = clausebody.replace(replstruct, proposalanswer);
+            ret = updateTemplateBody("<<OperatingExpenses>>", repClauseS, docInst);
+            if (!ret) {
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${repClauseS} `)
+            }
+            break;
+          case "Electric":
+            // special case (two level replace) for elecRentInc
+            if (ck === "elecRentInc") {
+              elRepS = clausebody.replace(replstruct, proposalanswer);
+            } else {
+              elRepS = clausebody;
+            }
+            ret = updateTemplateBody("<<Electric>>", elRepS, docInst);
+            if (!ret) {
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${elRepS} `)
+            }
+            break;
+          case "RealEstateTaxes":
+            retRepS = clausebody.replace(replstruct, proposalanswer);
+            ret = updateTemplateBody("<<RealEstateTaxes>>", retRepS, docInst);
+            if (!ret) {
+              throw new Error(`In ${fS}: problem with updateTemplateBody on ${retRepS} `)
+            }
+            break;
+          default:
+            break;
+        }
+      } // end if
+    }); // end forEach
   } catch (err) {
     probS = `In ${fS}: ${err} `
     Logger.log(probS);
@@ -637,40 +637,34 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
  * @param  {object} propDetailInst -- instance of propDetailC 
  * @return {boolean} return - true or false
  */
-// clauseKeyObjG.ti: "('tiAllow','tiFreight','tiAccess','tiCompBid','llWork')"
+// propDetailInst has the answers to questions for the form
+// propInst has the proposal information
+// ckSectionInst has the list of ck's for parking
 
-function handleParking(dbInst, docInst, propDetailInst, propInst) {
+function handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst) {
   var fS = "handleParking";
-  const inS = clauseKeyObjG.park;
+  var probS, ret, proposalanswer, clausebody, replstruct, ckInst;
+
   try {
-    var parkTerms = "";
-    var probS, ret, proposalanswer, clausebody, replstruct, ckInst, ck;
     const location = propInst.getLocation();
-    const tempCKS = inS.slice(2, inS.length - 2);
-    const clauseKeyA = tempCKS.split("','");
-    // clauseKeyA now has all ck in Parking
-    var ck;
-    if (location !== "LA" || location !== "Generic") {
+    if (location === "New York") {
       ret = removeParkRows(dbInst, "parkGeneral");
       return
     }
-    // else we have LA or generic and can continue
-
+    const clauseKeyA = ckSectionInst.getParkA();
     // first get the parkGeneral clauseBody and replStruct (<<parkGeneral>>) if it exists
     const ckInstParkGen = new ckC(dbInst, "parkGeneral", propInst.getSize(), propInst.getLocation(), "current");
-    var mainClause = ckInstParkGen.getClauseBoday();
-    const parkCKA = ["parkUnreservedRatio", "parkReservedRatio", "parkUnreservedCost", "parkReservedCost", "parkMaxEscPercent"];
+    var mainClause = ckInstParkGen.getClauseBody();
 
-  for (var i in clauseKeyA) {
-    ck = clauseKeyA[i];
-    ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
-    replstruct = ckInst.getReplStruct();
-    clausebody = ckInst.getClauseBody();
-    proposalanswer = propDetailInst.getAnswerFromCK(ck);
-    if (parkCAA.includes(ck) && proposalanswer !== "") {
-          mainClause = mainClause.replace(replstruct, proposalanswer);
+    clauseKeyA.forEach(ck => {
+      ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
+      replstruct = ckInst.getReplStruct();
+      clausebody = ckInst.getClauseBody();
+      proposalanswer = propDetailInst.getAnswerFromCK(ck);
+      if (proposalanswer !== "") {
+        mainClause = mainClause.replace(replstruct, proposalanswer);
       }
-    } // end for
+    }); // end forEach
 
     ret = updateTemplateBody("<<parkGeneral>>", mainClause, docInst);
     if (!ret) {

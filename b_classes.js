@@ -14,6 +14,50 @@ class propDetailC {
   }
 }
 
+class ckSectionAC {
+  constructor() {
+    this.expA = ['oePerInc', 'oeBaseYear', 'retBaseYear', 'elecDirect', 'elecSubmeter'];
+    this.optA = ['optRenew', 'optYears', 'optROFO', 'optROFR'];
+    this.overA = ['secDeposit', 'useType', 'llName', 'llbrokerName', 'proposalSalutation', 'recipientEmail', 'llbrokerCo', 'llbrokerAddr', 'commDate', 'leaseTerm', 'earlyAccess'];
+    this.parkA = ['parkUnreservedNum', 'parkUnreservedRatio', 'parkUnreservedCost', 'parkReservedNum',
+      'parkReservedRatio', 'parkReservedCost', 'parkMaxEscPercent', 'parkDescription'];
+    this.tiA = ['tiAllow', 'tiFreight', 'tiAccess', 'tiCompBid', 'llWork'];
+  }
+
+  getExpA() {
+    return this.expA
+  }
+  getOptA() {
+    return this.optA
+  }
+  getOverA() {
+    return this.overA
+  }
+  getParkA() {
+    return this.parkA
+  }
+  getTIA() {
+    return this.tiA
+  }
+}
+
+class ckLocalSectionAC extends ckSectionAC {
+  getExpA(loc) {
+    var e = super.getExpA();
+    if (loc === "New York") {
+      e.push('elecRentInc');
+      e.push('elecRentIncCharge');  
+    }
+    return e 
+  }
+  getParkA(loc) {
+    if (loc === "New York") {
+      return []
+    }
+    return super.getParkA()
+  }
+}
+
 class ckC {
   constructor(dbInst, ck, proposalSize, proposalLocation, version) {
     [this.clauseBody, this.section] = getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version);
@@ -353,7 +397,8 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
     var replStruct = "";
     var probS = "";
     var stmt;
-    var results, resA = [], cl="";
+    var results, resA = [],
+      cl = "";
     // Get all the clauses that match the ck and have correct version 
     var qryS = `select ClauseID, ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseVersion='${version}';`;
     const locConn = dbInst.getconn();
@@ -366,21 +411,21 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
     while (results.next()) {
       // first check to see if this row matches location or generic and if not continue
       const clauseLocation = results.getString("ClauseLocation");
-      if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')){
+      if (clauseLocation.includes(proposalLocation) || clauseLocation.includes('Generic')) {
         cl = proposalLocation;
+      } else {
+        continue
       }
-      else { continue }
       // gather up all the data and make an object of it 
       var clauseRow = {
         clauseID: results.getString("ClauseID"),
-        clauseKey : ck,
+        clauseKey: ck,
         clauseBody: results.getString("ClauseBody"),
         clauseSize: results.getString("ClauseSize"),
         clauseLocation: cl,
-        section : results.getString("Section"),
-        clauseVersion : version
+        section: results.getString("Section"),
+        clauseVersion: version
       }
-    
       resA.push(clauseRow);
     }
     if (resA.length == 0) { // no matching clauses found so throw an error

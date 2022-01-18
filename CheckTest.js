@@ -6,7 +6,20 @@ chkMajorPropDetailCategories    , dbInstG ,
 UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
 onHtmlSubmit    */
 
+function testExpckSectionAC() {
+  const ckLocalSectionInst = new ckLocalSectionAC();
+  const getExpA = new Set(ckLocalSectionInst.getExpA("New York"));
+  const constExpA = new Set(['oePerInc', 'oeBaseYear', 'retBaseYear', 'elecDirect', 'elecSubmeter', 'elecRentInc', 'elecRentIncCharge']);
+  const res = difference(getExpA, constExpA);
+  console.log(`result is ${res}`)
 
+}
+function testParkckSectionAC() {
+  const ckLocalSectionInst = new ckLocalSectionAC();
+  console.log(`park array for New York ${ckLocalSectionInst.getParkA("New York")}`)
+  console.log(`park array for Los Angeles ${ckLocalSectionInst.getParkA("Lost Angeles")}`)
+  return true
+}
 
 
 /* This tests the proposal detail class and creates an instance, using Ember at 25th proposal ID*/
