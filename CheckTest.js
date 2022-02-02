@@ -5,6 +5,12 @@
 chkMajorPropDetailCategories    , dbInstG ,
 UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
 onHtmlSubmit    */
+// foldID, docID in cdCode.js
+
+function testDocC() {
+  const docInst = new docC(docID, foldID, "Test Proposal-001");
+
+}
 
 function testExpckSectionAC() {
   const ckLocalSectionInst = new ckLocalSectionAC();
@@ -37,13 +43,13 @@ function testEvalProposal() {
   console.log(ret);
 }
 
-// eslint-disable-next-line no-unused-vars
-function testHandleTenAndPrem() {
-  const dbInst = dbInstG;
-  const docInst = new docC(docID, foldID);
-  var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
-  console.log(ret);
-}
+// // eslint-disable-next-line no-unused-vars
+// function testHandleTenAndPrem() {
+//   const dbInst = dbInstG;
+//   const docInst = new docC(docID, foldID);
+//   var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
+//   console.log(ret);
+// }
 
 /**
  * Purpose: Get all the clauseKeys in this form
@@ -82,16 +88,16 @@ function runTests() {
   }
 }
 
-// eslint-disable-next-line no-unused-vars
-function testHandleOver() {
-  const dbInst = dbInstG;
-  var docInst = new docC(docID, foldID);
-  // eslint-disable-next-line no-undef
-  var ret = handleOver(dbInst, docInst);
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return ret
-}
+// // eslint-disable-next-line no-unused-vars
+// function testHandleOver() {
+//   const dbInst = dbInstG;
+//   var docInst = new docC(docID, foldID);
+//   // eslint-disable-next-line no-undef
+//   var ret = handleOver(dbInst, docInst);
+//   docInst.saveAndCloseTemplate();
+//   dbInst.closeconn()
+//   return ret
+// }
 
 // eslint-disable-next-line no-unused-vars
 function testOnHtmlSubmit() {
@@ -100,23 +106,24 @@ function testOnHtmlSubmit() {
 }
 
 
-// eslint-disable-next-line no-unused-vars
-function testHandleExpenses() {
-  const dbInst = dbInstG;
-  var docInst = new docC(docID, foldID);
-  // eslint-disable-next-line no-undef
-  var ret = handleExpenses(dbInst, docInst);
-  // Logger.log(ret)
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return ret
-}
+// // eslint-disable-next-line no-unused-vars
+// function testHandleExpenses() {
+//   const dbInst = dbInstG;
+//   var docInst = new docC(docID, foldID);
+//   // eslint-disable-next-line no-undef
+//   var ret = handleExpenses(dbInst, docInst);
+//   // Logger.log(ret)
+//   docInst.saveAndCloseTemplate();
+//   dbInst.closeconn()
+//   return ret
+// }
 
 // eslint-disable-next-line no-unused-vars
 function testHandleBR() {
   const dbInst = dbInstG;
-  var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
-  var docInst = new docC(docID, foldID);
+  const propNameS = "MediaPlus 419 Park Avenue South";
+  var propInst = new proposalC(dbInst,propNameS);
+  var docInst = new docC(docID, foldID,propNameS);
   // eslint-disable-next-line no-undef
   var ret = handleBaseRent(dbInst, docInst, propInst);
   return ret
@@ -155,3 +162,5 @@ function testZeroValue() {
   console.log(ret);
 
 }
+
+

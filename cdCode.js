@@ -86,10 +86,10 @@ function evalProposal(dbInst) {
   const logLoc = logEvalProposal;
   var ret, propID, propNameS;
   try {
-    var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
     [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
+    const docInst = new docC(docID, foldID,propNameS);
     const propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
     // const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
