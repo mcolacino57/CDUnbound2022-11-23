@@ -4,7 +4,7 @@ docID , foldID , propListInstG */
 /*global Utilities , Logger  , DriveApp , BetterLog , HtmlService , 
 databaseC , docC , proposalC, propListC , ckC  , propDetailC ,
  getCurrPropID_,  readFromTable ,   maxRows , difference , 
- saveAsJSON  , optRowsStructG , removeOptRows
+ saveAsJSON  , optRowsStructG , removeOptRows , ckLocalSectionAC , removeParkRows
  */
 // 210727 10:39
 
@@ -85,11 +85,12 @@ function evalProposal(dbInst) {
   const fS = "evalProposal";
   const logLoc = logEvalProposal;
   var ret, propID, propNameS;
+  [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
+  var docInst; 
   try {
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
-    [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
-    const docInst = new docC(docID, foldID,propNameS);
+    docInst = new docC(docID, foldID, propNameS); 
     const propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
     // const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
@@ -404,7 +405,7 @@ function handleTenAndPrem(dbInst, docInst, propInst) {
  * @return {boolean} t/f - return true or false
  */
 // now uses ckC
-function handleExpenses(dbInst, docInst, propDetailInst, propInst,ckSectionInst) {
+function handleExpenses(dbInst, docInst, propDetailInst, propInst, ckSectionInst) {
   var fS = "handleExpenses";
   // get clauseKeys from the global structure; update this when cks are added
   //const inS = clauseKeyObjG.expenses;
@@ -643,7 +644,7 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
 
 function handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst) {
   var fS = "handleParking";
-  var probS, ret, proposalanswer, clausebody, replstruct, ckInst;
+  var probS, ret, proposalanswer, replstruct, ckInst;
 
   try {
     const location = propInst.getLocation();
@@ -659,7 +660,7 @@ function handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst)
     clauseKeyA.forEach(ck => {
       ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       replstruct = ckInst.getReplStruct();
-      clausebody = ckInst.getClauseBody();
+      // clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
       if (proposalanswer !== "") {
         mainClause = mainClause.replace(replstruct, proposalanswer);

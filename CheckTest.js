@@ -2,16 +2,35 @@
  */
 
 /*global logStatusofData, evalProposal , getCKThisForm , propDetailC
-chkMajorPropDetailCategories    , dbInstG ,
-UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
-onHtmlSubmit    */
+chkMajorPropDetailCategories    , dbInstG , incPropName ,
+UnitTestingApp , docC , docID , foldID , proposalC  , checkZeroValue ,
+onHtmlSubmit  , ckLocalSectionAC  , difference  */
 // foldID, docID in cdCode.js
 
-function testDocC() {
-  const docInst = new docC(docID, foldID, "Test Proposal-001");
+// eslint-disable-next-line no-unused-vars
+function testIncPropName() {
+  var ret;
+  ret = incPropName("Test Proposal");
+  console.log(ret);
+  ret = incPropName("Test Proposal-001");
+  console.log("001 "+ret)
+  ret = incPropName("Test Proposal-009");
+  console.log("009 "+ ret)
+  ret = incPropName("Test Proposal-099");
+  console.log("099 " + ret)
+  ret = incPropName("Test Proposal-500");
+  console.log("500 "+ ret)
+  ret = incPropName("Test Proposal-999");
+  console.log("0999 "+ ret)
 
 }
 
+// eslint-disable-next-line no-unused-vars
+function testDocC() {
+
+}
+
+// eslint-disable-next-line no-unused-vars
 function testExpckSectionAC() {
   const ckLocalSectionInst = new ckLocalSectionAC();
   const getExpA = new Set(ckLocalSectionInst.getExpA("New York"));
@@ -20,6 +39,7 @@ function testExpckSectionAC() {
   console.log(`result is ${res}`)
 
 }
+// eslint-disable-next-line no-unused-vars
 function testParkckSectionAC() {
   const ckLocalSectionInst = new ckLocalSectionAC();
   console.log(`park array for New York ${ckLocalSectionInst.getParkA("New York")}`)
