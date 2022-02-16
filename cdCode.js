@@ -1,25 +1,22 @@
 /*exported onSubmit  , todayS , nowS ,  userEmail , logStatusofData ,
 docID , foldID , propListInstG */
 
-/*global Utilities , Logger  , DriveApp , BetterLog , HtmlService , 
-databaseC , docC , proposalC, propListC , ckC  , propDetailC ,
+/*global Utilities , Logger  , DriveApp , BetterLog , HtmlService  , docC , proposalC,   ckC  , propDetailC ,
  getCurrPropID_,  readFromTable ,   maxRows , difference , 
  saveAsJSON  , optRowsStructG , removeOptRows , ckLocalSectionAC , removeParkRows
+ dbInstG , userEmail  , propListInstG 
  */
 // 210727 10:39
 
-const todayS = Utilities.formatDate(new Date(), "GMT-4", "MMMM d, yyyy");
-// const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
-const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
-// const userEmail = Session.getActiveUser().getEmail();
-const userEmail = "mcolacino@squarefoot.com";
+// const todayS = Utilities.formatDate(new Date(), "GMT-4", "MMMM d, yyyy");
+// const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
+// const userEmail = "mcolacino@squarefoot.com";
+// const databaseNameG = "applesmysql";
+// const dbInstG = new databaseC(databaseNameG);
+// const propListInstG = new propListC(dbInstG);
+
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE'; // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q'; // Proposal Generation in MyDrive
-const databaseNameG = "applesmysql";
-const dbInstG = new databaseC(databaseNameG);
-const propListInstG = new propListC(dbInstG);
-
-
 
 
 /************** clauseKey strings object ***********************/
