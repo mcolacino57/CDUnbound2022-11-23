@@ -1046,8 +1046,11 @@ function clientGetCDData(proposalNameS) {
     // var propInst = new proposalC(dbInst, proposalNameS);
     // var proposalID = propInst.getID();
 
-    const locConn = dbInst.getconn(); // get connection from the instance 
-    const qryS = `SELECT ProposalClauseKey, ProposalAnswer, section FROM applesmysql.prop_detail_ex where ProposalName like "${proposalNameS}" 
+    const locConn = dbInst.getconn(); // get connection from the instance
+    // this select statement cannont have the databasename hard wired in
+    // fixed 2022-11-23
+    const dbName = dbInst.getdb();
+    const qryS = `SELECT ProposalClauseKey, ProposalAnswer, section FROM ${dbName}.prop_detail_ex where ProposalName like "${proposalNameS}" 
       order by section;`;
     const stmt = locConn.prepareStatement(qryS);
     const results = stmt.executeQuery(qryS);
