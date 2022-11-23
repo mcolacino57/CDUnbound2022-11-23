@@ -37,8 +37,6 @@ const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
 // eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
 
-// var dbInstG = new databaseC("applesmysql");
-
 /**
  * Purpose: When using html forms, this function is called by 
  * processForm with the form object from the html 
@@ -646,8 +644,8 @@ function handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst)
   try {
     const location = propInst.getLocation();
     if (location === "New York") {
-      ret = removeParkRows(dbInst, "parkGeneral");
-      return
+      
+      return removeParkRows(docInst, "parkGeneral");
     }
     const clauseKeyA = ckSectionInst.getParkA();
     // first get the parkGeneral clauseBody and replStruct (<<parkGeneral>>) if it exists
@@ -702,13 +700,13 @@ function updateTemplateBody(replStructure, replText, docInst) {
 const logChkMajorPropDetailCategories = false;
 /**
  * Purpose: Before running an attempt to create a proposal, test to see that all the major
- * categories have been filled in. Should modifiy if additional clauses  sections are added.
+ * categories have been filled in. Should modify if additional sections are added.
  * Also should check to see where the proposal is located and omit certain checks, for example 
  * parking in NY. Also note that Premises is omitted even though its a legitimate section
  * since it's set entirely through the survey_spaces table.
  * 
  * Also note that this uses the view prop_detail_ex which joins the clause table
- * with the prop_detail table. This is where the 
+ * with the prop_detail table.
  *
  * @param  {String} propID - proposal id
  *
@@ -754,7 +752,7 @@ function chkMajorPropDetailCategories(propID) {
 
 const logLogStatusofData = false;
 /**
- * Purpose: check to see if major sections are represented in 
+ * Purpose: check to see if major sections are represented for this propertyID in 
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 
