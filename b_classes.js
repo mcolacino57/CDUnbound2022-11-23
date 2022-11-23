@@ -285,15 +285,28 @@ class brokerC extends personC {
 /***************** doc class ************************************ */
 
 class docC {
-  constructor(docID, foldID) {
+  constructor(docID, foldID, propNameS) {
+    const numAtEndReg = new RegExp(/-\d+$/);
+    const nameWOSuffixS = propNameS.split(numAtEndReg)[0];
+     
+    console.log(nameWOSuffixS);
     this.file = DriveApp.getFileById(docID);
-    this.folder = DriveApp.getFolderById(foldID);
+    // check to see if the current folder has a sub-folder with the name of the 
+    // propNameS, and if not create it 
+    var folderIterator = DriveApp.getFoldersByName(nameWOSuffixS);
+    if (folderIterator.hasNext()) {
+      this.folder = folderIterator.next();
+    }
+    else {
+      this.folder = DriveApp.createFolder(nameWOSuffixS);
+    }
+    // this.folder = DriveApp.getFolderById(foldID);
     this.docName = this.file.getName();
     this.ds = formatCurrentDate();
-    this.copy = this.file.makeCopy(this.docName + " " + this.ds, this.folder);
+    this.copy = this.file.makeCopy(propNameS + " Proposal " + this.ds, this.folder);
     this.copyName = this.copy.getName()
     this.locID = this.copy.getId();
-    console.log(`this locID ${this.locID}`)
+    // console.log(`this locID ${this.locID}`)
     this.locDocument = DocumentApp.openById(this.copy.getId());
     this.locBody = this.locDocument.getBody();
   }
@@ -321,16 +334,19 @@ class databaseC {
     this.rootPwd = 'lew_FEEB@trit3auch';
     this.db = dbS; // name of the database
 
-    if (dbS == "applesmysql_loc") {
-      this.conn = Jdbc.getConnection('jdbc:mysql://localhost:3306/' + this.db, {
-        user: this.root,
-        password: this.rootPWD
-      });
+     if (dbS == "applesmysql_loc") {
+      let server = '98.7.126.220'; // this was gateway address as of 2022-11-21
+      let port = '3306'; // port forwarded to 192.168.4.234, ip of macbook on 2022-11-21
+      let pwd = this.rootPwd;
+      let user = 'outroot';
+
+      var url = "jdbc:mysql://" + server + ":" + port + "/" + dbS;
+      console.log(url)
+      this.conn = Jdbc.getConnection(url, user, pwd);
       return;
     }
+
     this.connectionName = 'fleet-breaker-311114:us-central1:applesmysql';
-    this.root = 'root';
-    this.rootPwd = 'lew_FEEB@trit3auch';
     this.user = 'applesU1';
     this.userPwd = 'DIT6rest1paft!skux';
     this.instanceUrl = 'jdbc:google:mysql://' + this.connectionName;
@@ -400,7 +416,7 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
     var results, resA = [],
       cl = "";
     // Get all the clauses that match the ck and have correct version 
-    var qryS = `select ClauseID, ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseVersion='${version}';`;
+    var qryS = `select ClauseID,ClauseKey, ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseVersion='${version}';`;
     const locConn = dbInst.getconn();
     stmt = locConn.createStatement();
     results = stmt.executeQuery(qryS);

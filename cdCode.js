@@ -1,25 +1,22 @@
 /*exported onSubmit  , todayS , nowS ,  userEmail , logStatusofData ,
 docID , foldID , propListInstG */
 
-/*global Utilities , Logger  , DriveApp , BetterLog , HtmlService , 
-databaseC , docC , proposalC, propListC , ckC  , propDetailC ,
+/*global Utilities , Logger  , DriveApp , BetterLog , HtmlService  , docC , proposalC,   ckC  , propDetailC ,
  getCurrPropID_,  readFromTable ,   maxRows , difference , 
- saveAsJSON  , optRowsStructG , removeOptRows
+ saveAsJSON  , optRowsStructG , removeOptRows , ckLocalSectionAC , removeParkRows
+ dbInstG , userEmail  , propListInstG 
  */
 // 210727 10:39
 
-const todayS = Utilities.formatDate(new Date(), "GMT-4", "MMMM d, yyyy");
-// const propDateS = Utilities.formatDate(new Date(), "GMT-4", "MM/dd/yyyy");
-const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
-// const userEmail = Session.getActiveUser().getEmail();
-const userEmail = "mcolacino@squarefoot.com";
+// const todayS = Utilities.formatDate(new Date(), "GMT-4", "MMMM d, yyyy");
+// const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
+// const userEmail = "mcolacino@squarefoot.com";
+// const databaseNameG = "applesmysql";
+// const dbInstG = new databaseC(databaseNameG);
+// const propListInstG = new propListC(dbInstG);
+
 const docID = '17wgVY-pSMzqScI7GPBf4keprBu_t-LdekXecTlqfcmE'; // Proposal Tempate 1
 const foldID = '1eJIDn5LT-nTbMU0GA4MR8e8fwxfe6Q4Q'; // Proposal Generation in MyDrive
-const databaseNameG = "applesmysql";
-const dbInstG = new databaseC(databaseNameG);
-const propListInstG = new propListC(dbInstG);
-
-
 
 
 /************** clauseKey strings object ***********************/
@@ -39,8 +36,6 @@ const clauseKeyObjG = {
 const ssLogID = "1sUkePGlPOhnBRtGwRQWQZBwfy154zl70jDKL9o3ekKk";
 // eslint-disable-next-line no-global-assign
 Logger = BetterLog.useSpreadsheet(ssLogID);
-
-// var dbInstG = new databaseC("applesmysql");
 
 /**
  * Purpose: When using html forms, this function is called by 
@@ -85,11 +80,12 @@ function evalProposal(dbInst) {
   const fS = "evalProposal";
   const logLoc = logEvalProposal;
   var ret, propID, propNameS;
+  [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
+  var docInst; 
   try {
-    var docInst = new docC(docID, foldID);
     // get proposal name and returns [false,false] if there is a problem--in status.gs
     // eslint-disable-next-line no-unused-vars
-    [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
+    docInst = new docC(docID, foldID, propNameS); 
     const propInst = new proposalC(dbInst, propNameS); // create for later use, specifically in handleBaseRent
     // const propSize = propInst.getSize();
     const propDetailInst = new propDetailC(dbInst, propID);
@@ -404,7 +400,7 @@ function handleTenAndPrem(dbInst, docInst, propInst) {
  * @return {boolean} t/f - return true or false
  */
 // now uses ckC
-function handleExpenses(dbInst, docInst, propDetailInst, propInst,ckSectionInst) {
+function handleExpenses(dbInst, docInst, propDetailInst, propInst, ckSectionInst) {
   var fS = "handleExpenses";
   // get clauseKeys from the global structure; update this when cks are added
   //const inS = clauseKeyObjG.expenses;
@@ -643,13 +639,13 @@ function handleOpt(dbInst, docInst, propDetailInst, propInst) {
 
 function handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst) {
   var fS = "handleParking";
-  var probS, ret, proposalanswer, clausebody, replstruct, ckInst;
+  var probS, ret, proposalanswer, replstruct, ckInst;
 
   try {
     const location = propInst.getLocation();
     if (location === "New York") {
-      ret = removeParkRows(dbInst, "parkGeneral");
-      return
+      
+      return removeParkRows(docInst, "parkGeneral");
     }
     const clauseKeyA = ckSectionInst.getParkA();
     // first get the parkGeneral clauseBody and replStruct (<<parkGeneral>>) if it exists
@@ -659,7 +655,7 @@ function handleParking(dbInst, docInst, propDetailInst, propInst, ckSectionInst)
     clauseKeyA.forEach(ck => {
       ckInst = new ckC(dbInst, ck, propInst.getSize(), propInst.getLocation(), "current");
       replstruct = ckInst.getReplStruct();
-      clausebody = ckInst.getClauseBody();
+      // clausebody = ckInst.getClauseBody();
       proposalanswer = propDetailInst.getAnswerFromCK(ck);
       if (proposalanswer !== "") {
         mainClause = mainClause.replace(replstruct, proposalanswer);
@@ -704,13 +700,13 @@ function updateTemplateBody(replStructure, replText, docInst) {
 const logChkMajorPropDetailCategories = false;
 /**
  * Purpose: Before running an attempt to create a proposal, test to see that all the major
- * categories have been filled in. Should modifiy if additional clauses  sections are added.
+ * categories have been filled in. Should modify if additional sections are added.
  * Also should check to see where the proposal is located and omit certain checks, for example 
  * parking in NY. Also note that Premises is omitted even though its a legitimate section
  * since it's set entirely through the survey_spaces table.
  * 
  * Also note that this uses the view prop_detail_ex which joins the clause table
- * with the prop_detail table. This is where the 
+ * with the prop_detail table.
  *
  * @param  {String} propID - proposal id
  *
@@ -756,7 +752,7 @@ function chkMajorPropDetailCategories(propID) {
 
 const logLogStatusofData = false;
 /**
- * Purpose: check to see if major sections are represented in 
+ * Purpose: check to see if major sections are represented for this propertyID in 
  *
  * @param  {String} param_name - param
  * @param  {itemReponse[]} param_name - an array of responses 

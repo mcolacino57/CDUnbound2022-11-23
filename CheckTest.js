@@ -2,18 +2,46 @@
  */
 
 /*global logStatusofData, evalProposal , getCKThisForm , propDetailC
-chkMajorPropDetailCategories    , dbInstG ,
-UnitTestingApp , docC , docID , foldID , proposalC , handleTenAndPrem , checkZeroValue ,
-onHtmlSubmit    */
+chkMajorPropDetailCategories    , dbInstG , incPropName ,
+UnitTestingApp , docC , docID , foldID , proposalC  , checkZeroValue ,
+onHtmlSubmit  , ckLocalSectionAC  , difference  */
+// foldID, docID in cdCode.js
 
-function testExpckSectionAC() {
-  const ckLocalSectionInst = new ckLocalSectionAC();
-  const getExpA = new Set(ckLocalSectionInst.getExpA("New York"));
-  const constExpA = new Set(['oePerInc', 'oeBaseYear', 'retBaseYear', 'elecDirect', 'elecSubmeter', 'elecRentInc', 'elecRentIncCharge']);
-  const res = difference(getExpA, constExpA);
-  console.log(`result is ${res}`)
+// eslint-disable-next-line no-unused-vars
+function testIncPropName() {
+  var ret;
+  ret = incPropName("Test Proposal");
+  console.log(ret);
+  ret = incPropName("Test Proposal-001");
+  console.log("001 "+ret)
+  ret = incPropName("Test Proposal-009");
+  console.log("009 "+ ret)
+  ret = incPropName("Test Proposal-099");
+  console.log("099 " + ret)
+  ret = incPropName("Test Proposal-500");
+  console.log("500 "+ ret)
+  ret = incPropName("Test Proposal-999");
+  console.log("0999 "+ ret)
 
 }
+
+function testLogStatusofData(){
+  const propID = "41512512-247f-11ec-a0c2-42010a800006"; // Tenant X Downtown
+  var ret = logStatusofData(propID);
+  console.log(`In testLogStatusofData ret is ${ret} `);
+}
+
+// eslint-disable-next-line no-unused-vars
+function testExpckSectionAC() {
+  const ckLocalSectionInst = new ckLocalSectionAC();
+  const getExpA = new Set(ckLocalSectionInst.getExpA("New York")); 
+  const constExpA = new Set(['oePerInc', 'retBaseYear', 'elecDirect', 'elecSubmeter', 'elecRentInc', 'elecRentIncCharge']); // missing 'oeBaseYear' for testing purposes
+  const res = difference(getExpA, constExpA);
+  const resA =  JSON.stringify(Array.from(res.values()))
+  console.log(`and result is ${resA}`)
+
+}
+// eslint-disable-next-line no-unused-vars
 function testParkckSectionAC() {
   const ckLocalSectionInst = new ckLocalSectionAC();
   console.log(`park array for New York ${ckLocalSectionInst.getParkA("New York")}`)
@@ -37,13 +65,13 @@ function testEvalProposal() {
   console.log(ret);
 }
 
-// eslint-disable-next-line no-unused-vars
-function testHandleTenAndPrem() {
-  const dbInst = dbInstG;
-  const docInst = new docC(docID, foldID);
-  var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
-  console.log(ret);
-}
+// // eslint-disable-next-line no-unused-vars
+// function testHandleTenAndPrem() {
+//   const dbInst = dbInstG;
+//   const docInst = new docC(docID, foldID);
+//   var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
+//   console.log(ret);
+// }
 
 /**
  * Purpose: Get all the clauseKeys in this form
@@ -70,28 +98,29 @@ function runTests() {
   // var userS = userEmail;
   // var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();
-  const propID = "28f9fbf7-5a9d-11ec-a080-42010a800007"; // for testing use Ember
+  const propID = "41512512-247f-11ec-a0c2-42010a800006"; // for testing use Downtown Tenant X
   test.enable(); // tests will run below this line
   test.runInGas(true);
   if (test.isEnabled) {
     test.assert(testPropDetailA(dbInst, propID), `testPropDetail -> propID ${propID} `);
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
     test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
-    test.assert(testEvalProposal(), `evalProposal -> propID ${propID}`)
+    test.assert(testEvalProposal(), `evalProposal -> propID ${propID}`);
+    test.assert(testExpckSectionAC(),'testExpckSectionAC')
 
   }
 }
 
-// eslint-disable-next-line no-unused-vars
-function testHandleOver() {
-  const dbInst = dbInstG;
-  var docInst = new docC(docID, foldID);
-  // eslint-disable-next-line no-undef
-  var ret = handleOver(dbInst, docInst);
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return ret
-}
+// // eslint-disable-next-line no-unused-vars
+// function testHandleOver() {
+//   const dbInst = dbInstG;
+//   var docInst = new docC(docID, foldID);
+//   // eslint-disable-next-line no-undef
+//   var ret = handleOver(dbInst, docInst);
+//   docInst.saveAndCloseTemplate();
+//   dbInst.closeconn()
+//   return ret
+// }
 
 // eslint-disable-next-line no-unused-vars
 function testOnHtmlSubmit() {
@@ -100,23 +129,24 @@ function testOnHtmlSubmit() {
 }
 
 
-// eslint-disable-next-line no-unused-vars
-function testHandleExpenses() {
-  const dbInst = dbInstG;
-  var docInst = new docC(docID, foldID);
-  // eslint-disable-next-line no-undef
-  var ret = handleExpenses(dbInst, docInst);
-  // Logger.log(ret)
-  docInst.saveAndCloseTemplate();
-  dbInst.closeconn()
-  return ret
-}
+// // eslint-disable-next-line no-unused-vars
+// function testHandleExpenses() {
+//   const dbInst = dbInstG;
+//   var docInst = new docC(docID, foldID);
+//   // eslint-disable-next-line no-undef
+//   var ret = handleExpenses(dbInst, docInst);
+//   // Logger.log(ret)
+//   docInst.saveAndCloseTemplate();
+//   dbInst.closeconn()
+//   return ret
+// }
 
 // eslint-disable-next-line no-unused-vars
 function testHandleBR() {
   const dbInst = dbInstG;
-  var propInst = new proposalC(dbInst, "MediaPlus 419 Park Avenue South");
-  var docInst = new docC(docID, foldID);
+  const propNameS = "MediaPlus 419 Park Avenue South";
+  var propInst = new proposalC(dbInst,propNameS);
+  var docInst = new docC(docID, foldID,propNameS);
   // eslint-disable-next-line no-undef
   var ret = handleBaseRent(dbInst, docInst, propInst);
   return ret
@@ -155,3 +185,5 @@ function testZeroValue() {
   console.log(ret);
 
 }
+
+
