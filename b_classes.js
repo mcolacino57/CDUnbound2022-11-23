@@ -334,16 +334,19 @@ class databaseC {
     this.rootPwd = 'lew_FEEB@trit3auch';
     this.db = dbS; // name of the database
 
-    if (dbS == "applesmysql_loc") {
-      this.conn = Jdbc.getConnection('jdbc:mysql://localhost:3306/' + this.db, {
-        user: this.root,
-        password: this.rootPWD
-      });
+     if (dbS == "applesmysql_loc") {
+      let server = '98.7.126.220'; // this was gateway address as of 2022-11-21
+      let port = '3306'; // port forwarded to 192.168.4.234, ip of macbook on 2022-11-21
+      let pwd = this.rootPwd;
+      let user = 'outroot';
+
+      var url = "jdbc:mysql://" + server + ":" + port + "/" + dbS;
+      console.log(url)
+      this.conn = Jdbc.getConnection(url, user, pwd);
       return;
     }
+
     this.connectionName = 'fleet-breaker-311114:us-central1:applesmysql';
-    this.root = 'root';
-    this.rootPwd = 'lew_FEEB@trit3auch';
     this.user = 'applesU1';
     this.userPwd = 'DIT6rest1paft!skux';
     this.instanceUrl = 'jdbc:google:mysql://' + this.connectionName;
@@ -413,7 +416,7 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
     var results, resA = [],
       cl = "";
     // Get all the clauses that match the ck and have correct version 
-    var qryS = `select ClauseID, ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseVersion='${version}';`;
+    var qryS = `select ClauseID,ClauseKey, ClauseBody, ClauseSize, ClauseLocation, Section from clauses where ClauseKey ='${ck}' and ClauseVersion='${version}';`;
     const locConn = dbInst.getconn();
     stmt = locConn.createStatement();
     results = stmt.executeQuery(qryS);
