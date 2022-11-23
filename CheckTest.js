@@ -25,18 +25,20 @@ function testIncPropName() {
 
 }
 
-// eslint-disable-next-line no-unused-vars
-function testDocC() {
-
+function testLogStatusofData(){
+  const propID = "41512512-247f-11ec-a0c2-42010a800006"; // Tenant X Downtown
+  var ret = logStatusofData(propID);
+  console.log(`In testLogStatusofData ret is ${ret} `);
 }
 
 // eslint-disable-next-line no-unused-vars
 function testExpckSectionAC() {
   const ckLocalSectionInst = new ckLocalSectionAC();
-  const getExpA = new Set(ckLocalSectionInst.getExpA("New York"));
-  const constExpA = new Set(['oePerInc', 'oeBaseYear', 'retBaseYear', 'elecDirect', 'elecSubmeter', 'elecRentInc', 'elecRentIncCharge']);
+  const getExpA = new Set(ckLocalSectionInst.getExpA("New York")); 
+  const constExpA = new Set(['oePerInc', 'retBaseYear', 'elecDirect', 'elecSubmeter', 'elecRentInc', 'elecRentIncCharge']); // missing 'oeBaseYear' for testing purposes
   const res = difference(getExpA, constExpA);
-  console.log(`result is ${res}`)
+  const resA =  JSON.stringify(Array.from(res.values()))
+  console.log(`and result is ${resA}`)
 
 }
 // eslint-disable-next-line no-unused-vars
@@ -96,14 +98,15 @@ function runTests() {
   // var userS = userEmail;
   // var propID = getCurrPropID_(dbInst,userS)[0];
   const test = new UnitTestingApp();
-  const propID = "28f9fbf7-5a9d-11ec-a080-42010a800007"; // for testing use Ember
+  const propID = "41512512-247f-11ec-a0c2-42010a800006"; // for testing use Downtown Tenant X
   test.enable(); // tests will run below this line
   test.runInGas(true);
   if (test.isEnabled) {
     test.assert(testPropDetailA(dbInst, propID), `testPropDetail -> propID ${propID} `);
     test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
     test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
-    test.assert(testEvalProposal(), `evalProposal -> propID ${propID}`)
+    test.assert(testEvalProposal(), `evalProposal -> propID ${propID}`);
+    test.assert(testExpckSectionAC(),'testExpckSectionAC')
 
   }
 }
