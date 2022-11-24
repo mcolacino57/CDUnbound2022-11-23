@@ -449,7 +449,7 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
       // have now created an array of one or more of these structures 
     }
     // could be several rows that match (with different sizes) so select the best fit
-    var bestFitRow = matchProposalSizeWithClause(proposalSize, resA);
+    var bestFitRow = matchProposalSizeWithClause(proposalSize, ck, resA);
 
   } catch (err) {
     throw new Error(err.message)
