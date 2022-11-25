@@ -34,6 +34,7 @@ class ckSectionAC {
   getTIA() {
     return this.tiA
   }
+}
   class ckLocalSectionAC extends ckSectionAC {
   getExpA(loc) {
     var e = super.getExpA();
@@ -50,4 +51,4 @@ class ckSectionAC {
     return super.getParkA()
   }
 }
-}
+
