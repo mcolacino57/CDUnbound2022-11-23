@@ -39,7 +39,7 @@ function testExpckSectionAC() {
   const res = difference(getExpA, constExpA);
   const resA =  JSON.stringify(Array.from(res.values()))
   console.log(`and result is ${resA}`)
-
+   return resA
 }
 // eslint-disable-next-line no-unused-vars
 function testParkckSectionAC() {
@@ -63,6 +63,7 @@ function testEvalProposal() {
   const dbInst = dbInstG;
   var ret = evalProposal(dbInst);
   console.log(ret);
+  return true
 }
 
 // // eslint-disable-next-line no-unused-vars
