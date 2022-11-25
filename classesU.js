@@ -1,3 +1,6 @@
+// Classes, universal version 2022-11-25
+
+
 /* eslint-disable no-unused-vars */
 /*global Logger, getPropSize,userEmail,DriveApp,DocumentApp,getItemResps,getAnswerWithMap,Jdbc,Utilities ,
 getProposalNamesAndIDs , getPropSize , getPropLocation , createPropDetailA ,
