@@ -1,9 +1,9 @@
-/*global  Logger , userEmail , SpreadsheetApp , 
-getCKThisForm , proposalC , dbInstG , propListInstG
+/*global databaseNameG , databaseC , Logger , userEmail , SpreadsheetApp , 
+  , dbInstG , propListInstG
 */
 /* exported readInListFromTable, , writeToTable , 
 getProposalData , getProposalNamesAndIDs , getProposalNames , getAddressSuiteFloorSF,
-getSpaceDisplay,getNamedProposalData,writePropDetail,writeProposal,
+getSpaceDisplay,getNamedProposalData,writePropDetail,
 setProposalCurrent,getCurrentProposal,objectToArray,rangeToObjects,testMatchingBRProposalID,
 testReadFromClauses,testReadFromProposals*/
 
@@ -11,7 +11,6 @@ testReadFromClauses,testReadFromProposals*/
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
  * 
- *
  * @param  {object} dbInst - instance of database class
  * @param {string} tableNameS - table to read
  * @param {string} colS - column to select on
@@ -21,7 +20,6 @@ testReadFromClauses,testReadFromProposals*/
 // Modified 210714 to include json y/n
 const logReadFromTable = false;
 const maxRows = 1000;
-
 function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
   var fS = "readFromTable";
   var logLoc = logReadFromTable;
@@ -32,7 +30,8 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
   } catch (err) {
-    Logger.log(`In ${fS} issue getting connection or creating statement: ${err}`);
+    const probS = `In ${fS} issue getting connection or creating statement: ${err}`;
+    Logger.log(probS);
     return false
   }
   /******************extract rows that meet select criteria ********* */
@@ -41,14 +40,15 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
   } catch (err) {
-    Logger.log(`In ${fS} problem with executing ${colS} = ${searchS} query : ${err}`);
+    const probS = `In ${fS} problem with executing ${colS} = ${searchS} query : ${err}`
+    Logger.log(probS);
     return false
   }
   var dataA = [];
-  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+  while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
     var recA = [];
     for (var col = 0; col < numCols; col++) {
-      recA.push(results.getString(col + 1)); // create inner array(s)
+      recA.push(results.getString(col + 1));  // create inner array(s)
     }
     dataA.push(recA); // push inner array into outside array
   }
@@ -59,9 +59,9 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
   try {
     var colA = dbInst.getcolumns(tableNameS);
   } catch (err) {
-    var problemS = `In ${fS} problem with executing query : ${err}`
-    Logger.log(problemS);
-    return problemS
+    var probS = `In ${fS} problem with executing query : ${err}`
+    Logger.log(probS);
+    return probS
   }
 
   var rowA = splitRangesToObjects(colA, dataA); // utility function in objUtil.gs
@@ -77,7 +77,6 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
     retObj["fields"] = rowA[j];
     retA.push(retObj);
   }
-  // console.log(retA);
   if (jsonyn) {
     return retA
   } else {
@@ -86,7 +85,7 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
 }
 
 /**
- * Purpose: 
+ * Purpose: POSSIBLE DEPRECATED CODE; check where called
  *
  * @param  {Object} dbInst - instance of database class
  * @param {String} tableNameS - table to read
@@ -98,7 +97,6 @@ function readFromTable(dbInst, tableNameS, colS, searchS, jsonyn = true) {
  */
 
 const logReadInListFromTable = false;
-
 function readInListFromTable(dbInst, tableNameS, colS, inListS) {
   var fS = "readInListFromTable";
   var logLoc = logReadInListFromTable;
@@ -126,10 +124,10 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
     return problemS
   }
   var dataA = [];
-  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+  while (results.next()) {  // the resultSet cursor moves forward with next; ends with false when at end
     var recA = [];
     for (var col = 0; col < numCols; col++) {
-      recA.push(results.getString(col + 1)); // create inner array(s)
+      recA.push(results.getString(col + 1));  // create inner array(s)
     }
     dataA.push(recA); // push inner array into outside array
   }
@@ -138,80 +136,6 @@ function readInListFromTable(dbInst, tableNameS, colS, inListS) {
 
   /**************************now get the header names ************************** */
   qryS = `SHOW COLUMNS FROM ${tableNameS};`
-  try {
-    var stmt2 = locConn.createStatement();
-    var colA = [];
-    var cols = stmt2.executeQuery(qryS);
-    while (cols.next()) {
-      colA.push(cols.getString(1));
-    }
-  } catch (err) {
-    problemS = `In ${fS} problem with executing query : ${err}`
-    console.log(problemS);
-    return problemS
-  }
-
-  var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
-  logLoc ? console.log(rowA) : true;
-
-  results.close();
-  stmt.close();
-  stmt2.close();
-
-  return rowA
-}
-
-
-/**
- * Purpose: 
- *
- * @param  {Object} dbInst - instance of database class
- * @return {String} retS - return value
- * 
- * return value is in the form: 
- */
-
-const disp_readInClausesFromTable = false;
-// eslint-disable-next-line no-unused-vars
-function readInClausesFromTable(dbInst) {
-  var fS = "readInClausesFromTable";
-  var logLoc = disp_readInClausesFromTable;
-  var problemS;
-  /*********connect to database ************************************ */
-  try {
-    var locConn = dbInst.getconn(); // get connection from the instance
-    logLoc ? console.log(locConn.toString()) : true;
-    var stmt = locConn.createStatement();
-    stmt.setMaxRows(maxRows);
-  } catch (err) {
-    problemS = `In ${fS} issue getting connection or creating statement: ${err}`;
-    console.log(problemS);
-    return problemS
-  }
-  /******************extract rows that meet select criteria ********* */
-  var qryS = `SELECT * FROM clauses where ClauseVersion = 'current' and ClauseKey = 'premises'  ;`;
-  logLoc ? console.log(qryS) : true;
-  try {
-    var results = stmt.executeQuery(qryS);
-    var numCols = results.getMetaData().getColumnCount();
-  } catch (err) {
-    problemS = `In ${fS} problem with executing qryS ${qryS} : ${err}`;
-    console.log(problemS);
-    return problemS
-  }
-  var dataA = [];
-  while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
-    var recA = [];
-    for (var col = 0; col < numCols; col++) {
-      recA.push(results.getString(col + 1)); // create inner array(s)
-    }
-    dataA.push(recA); // push inner array into outside array
-  }
-  // This finishes with an nxm matrix with #rows = length of dataA and #cols = numCols
-  logLoc ? console.log(dataA) : true;
-
-  /**************************now get the header names ************************** */
-  qryS = `SHOW COLUMNS FROM clauses;`
   try {
     var stmt2 = locConn.createStatement();
     var colA = [];
@@ -257,7 +181,8 @@ function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
     var stmt = locConn.createStatement();
     stmt.setMaxRows(maxRows);
   } catch (err) {
-    Logger.log(`In ${fS} issue getting connection or creating statement: ${err}`);
+    const probS = `In ${fS} issue getting connection or creating statement: ${err}`;
+    Logger.log(probS);
     return false
   }
   /******************extract rows that meet select criteria ********* */
@@ -266,7 +191,8 @@ function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
     var results = stmt.executeQuery(qryS);
     var numCols = results.getMetaData().getColumnCount();
   } catch (err) {
-    Logger.log(`In ${fS} problem with executing query : ${err}`);
+    const probS = `In ${fS} problem with executing query : ${err}`;
+    Logger.log(probS);
     return false
   }
   var dataA = [];
@@ -283,9 +209,9 @@ function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
   try {
     var colA = dbInst.getcolumns(tableNameS);
   } catch (err) {
-    var problemS = `In ${fS} problem with executing query : ${err}`
-    Logger.log(problemS);
-    return problemS
+    var probS = `In ${fS} problem with executing query : ${err}`
+    Logger.log(probS);
+    return probS
   }
   var rowA = splitRangesToObjects(colA, dataA); // utility fn in objUtil.gs
   logLoc ? console.log(`In ${fS} ${rowA}`) : true;
@@ -305,12 +231,12 @@ function readAllFromTable(dbInst, tableNameS, jsonyn = true) {
 }
 
 /* 
- * Purpose: get an array of ProposalNames and IDs from proposals table
- *         based upon the name of the user
- *
- * @param  {String} userS - optional user string (email)
- * @return {array} propNameIDA - 2D array: name, id
- */
+  * Purpose: get an array of ProposalNames and IDs from proposals table
+  *         based upon the name of the user
+  *
+  * @param  {String} userS - optional user string (email)
+ * @return {array} propNameIDA - 2D array: [name, id, current]
+  */
 
 function getProposalNamesAndIDs(dbInst, userS = userEmail) {
   var fS = "getProposalNamesAndIDs";
@@ -323,7 +249,7 @@ function getProposalNamesAndIDs(dbInst, userS = userEmail) {
     ret = readFromTable(dbInst, tableNameS, colNameS, searchS, jsonyn);
     if (!ret) throw new Error(`problem reading from table ${tableNameS}`);
     var propNameIDA = ret.map(function (record) {
-      return [record.proposalname, record.proposalid, record.current]
+      return [record.proposalname, record.proposalid, record.current];
     });
   } catch (err) {
     var probS = `In ${fS} error ${err}`;
@@ -333,8 +259,7 @@ function getProposalNamesAndIDs(dbInst, userS = userEmail) {
   return propNameIDA
 }
 
-
-/**
+/** POSSIBLE DEPRECATED
  * Purpose: Join spaces and buildings (view?) to get SpaceID / Floor / Suite / Square Footage
  *
  * @param  {String} param_name - param
@@ -394,15 +319,14 @@ function getSpaceDisplay(userS = userEmail) {
 
 
 /** 
- * Purpose: Get data from the proposal table
- *         based upon the name of the user
- *
- * @param {object} dbInst - instance of databaseC
- *  @param  {String} userS - optional user string (email)
- * @return {array} propDataA - 2D array: name, id, loc, size
- */
+  * Purpose: Get data from the proposal table
+  *         based upon the name of the user
+  *
+  * @param {object} dbInst - instance of databaseC
+  *  @param  {String} userS - optional user string (email)
+  * @return {array} propDataA - 2D array: name, id, loc, size
+  */
 const logGetProposalData = false;
-
 function getProposalData(dbInst, userS = userEmail) {
   var tableNameS = "proposals";
   var colNameS = "CreatedBy";
@@ -418,12 +342,12 @@ function getProposalData(dbInst, userS = userEmail) {
 }
 
 /** 
- * Purpose: Get data from the proposal table
- *         based upon a proposal name, and the name of the user
- * @param  {String} proposalNameS - a name of a proposal
- * @param  {String} userS - optional user string (email)
- * @return {object} pObj - object: name, id, loc, size
- */
+  * Purpose: Get data from the proposal table
+  *         based upon a proposal name, and the name of the user
+  * @param  {String} proposalNameS - a name of a proposal
+  * @param  {String} userS - optional user string (email)
+  * @return {object} pObj - object: name, id, loc, size
+  */
 
 function getNamedProposalData(dbInst, proposalNameS, userS = userEmail) {
   var fS = "getNamedProposalData";
@@ -455,41 +379,11 @@ function getNamedProposalData(dbInst, proposalNameS, userS = userEmail) {
   }
 }
 
-const logWriteProposal = false;
-
-function writeProposal(dbInst, record) {
-  var fS = 'writeProposal';
-  var colS = "ProposalID,ProposalName,space_identity,TenantName,ProposalSize,CreatedBy,CreatedWhen,ModifiedWhen,ModifiedBy";
-  var valA = Object.values(record);
-  var recordS = "";
-  for (var i = 0; i < valA.length; i++) {
-    if (i < (valA.length - 1)) {
-      recordS = recordS + "'" + valA[i] + "',";
-    } else {
-      recordS = recordS + "'" + valA[i] + "'";
-    }
-  }
-  recordS = "UUID()," + recordS;
-  try {
-    var qryS = `INSERT INTO proposals (${colS}) VALUES(${recordS});`;
-    logWriteProposal ? console.log(qryS) : true;
-    var locConn = dbInst.getconn(); // get connection from the instance
-    var stmt = locConn.prepareStatement(qryS);
-    stmt.execute();
-  } catch (err) {
-    var problemS = `In ${fS}: ${err}`;
-    logWriteProposal ? console.log(problemS) : true;
-    return problemS
-  }
-  return "Success"
-}
-
 /**
  * Purpose: get a list of ProposalNames from proposals table
  *
  * @param  {dbInst} param_name - an array of responses 
  * @param  {String} userS - optional user string (email)
- * @param  {itemReponse[]} param_name - an array of responses 
  * @return {String} retS - return value
  */
 function getProposalNames(dbInst, userS = userEmail) {
@@ -553,9 +447,7 @@ SET
 [WHERE
     condition];*/
 
-// eslint-disable-next-line no-unused-vars
-const logSetProposalCurrent = false;
-
+const disp_SetProposalCurrent = false;
 function setProposalCurrent(dbInst, pid) {
   var fS = "setProposalCurrent";
   try {
@@ -567,51 +459,17 @@ function setProposalCurrent(dbInst, pid) {
     var stmt = locConn.prepareStatement(qryS1);
     stmt.execute();
     var qryS2 = `UPDATE proposals SET proposals.current = true WHERE proposals.ProposalID= '${pid}';`;
-    // console.log(qryS);
+    disp_SetProposalCurrent ? Logger.log(`in ${fS} qryS1 is ${qryS1} qryS2 is ${qryS2}`) : true;
     stmt = locConn.prepareStatement(qryS2);
     stmt.execute();
   } catch (err) {
-    Logger.log(`in ${fS} qryS1 is ${qryS1} qryS2 is ${qryS2}`);
+    const probS = `In ${fS}: ${err}`;
+    Logger.log(probS);
     return false
   }
   return true
 
 }
-/**
- * Purpose: set the current proposal with only a proposal
- * name string; create a new propInst and dbInst to do so
- *
- * @param  {String} pnS - proposal name string
- * @return {boolean} f or ID of the proposal - or throws error
- */
-
-// eslint-disable-next-line no-unused-vars
-function clientSetProposalCurrent(pnS) {
-  var fS = "clientSetProposalCurrent";
-  var dbInst;
-  Logger.log(`Getting into clientSetProposalCurrent with ${pnS}`);
-  try {
-    const dbInst = dbInstG;
-    const propListInst = propListInstG;
-    // propInst = new proposalC(dbInst, pnS);
-    // var pid = propInst.getID();
-    const pid = propListInst.getIDfromName(pnS);
-    propListInst.setCurr(pid);
-    var ret = setProposalCurrent(dbInst, pid);
-    if (!ret) throw new Error(`problem in setProposalCurrent for ${pnS}`);
-    var overDA = clientGetCDData(pnS);
-    if (!ret) throw new Error(`problem in clientGetCDData for ${pnS}`);
-
-
-  } catch (err) {
-    Logger.log(`In ${fS}: ${err}`);
-    dbInst.closeconn();
-    return false
-  }
-  dbInst.closeconn();
-  return overDA;
-}
-
 /**
  * Purpose: get current proposal from db
  *
@@ -619,15 +477,14 @@ function clientSetProposalCurrent(pnS) {
  * @return {boolean[]} [pid, pN] or [false,false]
  */
 
-// eslint-disable-next-line no-unused-vars
-function getCurrentProposal(userS = userEmail) {
+ // eslint-disable-next-line no-unused-vars
+ function getCurrentProposal(userS = userEmail) {
   const fS = "getCurrentProposal";
-  const dbInst = dbInstG;
+  var dbInst = dbInstG;
   var pid = "";
   var pN = "";
   try {
     const locConn = dbInst.getconn(); // get connection from the instance
-
     const qryS = `SELECT ProposalID, ProposalName FROM proposals WHERE current=true;`;
     const stmt = locConn.prepareStatement(qryS);
     const results = stmt.executeQuery(qryS);
@@ -656,6 +513,64 @@ function getCurrentProposal(userS = userEmail) {
 
     return [false, false]
   }
+}
+
+/**
+ * Purpose: Get the size of the current proposal
+ *
+ * @param  {object} dbInst - instance of databaseC
+ * @param  {string} propID - proposal id
+ * @return {String} retS - return S/M/L
+ */
+function getPropSize(dbInst, propID, userS) {
+  var fS = "getPropSize";
+  try {
+    var locConn = dbInst.getconn();
+    var qryS = `SELECT ProposalSize FROM proposals WHERE ProposalID = '${propID}' AND CreatedBy = '${userS}'`;
+    var stmt = locConn.prepareStatement(qryS);
+    var results = stmt.executeQuery(qryS);
+    while (results.next()) { // the resultSet cursor moves forward with next; ends with false when at end
+      var value = results.getString("ProposalSize")
+    }
+  } catch (err) {
+    var probS = `In ${fS} error ${err}`;
+    Logger.log(probS);
+    return false
+  }
+  return value
+}
+
+
+/**
+ * Purpose
+ *
+ * @param  {object} dbInst - instance of database class
+ * @param  {number} propID - proposal identifier integer
+ * @return {boolean} retS - return value
+ */
+function matchingBRProposalID(dbInst, propID) {
+  var fS = "matchingBRProposalID";
+  try {
+    var locConn = dbInst.getconn(); // get connection from the instance
+    var stmt = locConn.createStatement();
+  } catch (err) {
+    const probS = `In ${fS} problem with connecting: ${err}`;
+    Logger.log(probS);
+    return false
+  }
+  try {
+    var rs = stmt.executeQuery(`SELECT COUNT(*) FROM base_rent where ProposalID = '${propID}';`);
+    rs.next()
+    var rowCount = rs.getLong(1);
+    if (rowCount == 0) {
+      return false
+    }
+  } catch (err) {
+    var errS = `In ${fS} problem with executing ProposalID = ${propID} query : ${err}`
+    Logger.log(errS);
+    throw new Error(errS); // pass up to calling function
+  }
+  return true
 }
 
 
@@ -721,7 +636,6 @@ function isAlnum_(char) {
     char >= 'a' && char <= 'z' ||
     isDigit_(char);
 }
-
 function isDigit_(char) {
   return char >= '0' && char <= '9';
 }
@@ -796,41 +710,10 @@ function camelArray(headers) {
   return keys;
 }
 
-/**********************Test Functions********************** */
 
 
-function testMatchingBRProposalID() {
-  var dbInst = dbInstG;
-  var ret = matchingBRProposalID(dbInst, "bb5db7d9-df89-11eb-8b6e-42010a800002");
-  console.log(ret)
-  dbInst.closeconn();
-}
 
-function testReadFromClauses() {
-  const dbInst = dbInstG;
-  var tableNameS = "clauses";
-  var colNameS = "Section";
-  var searchS = "Electric";
-  var jsonyn = false;
-  var retA = readFromTable(dbInst, tableNameS, colNameS, searchS, jsonyn); // all rows in section Electric
-  // var records = retA.map(function (record) {
-  //   return record;
-  // });
-  console.log(retA);
-  // console.log(records[0].clausekey);
-  dbInst.closeconn();
-}
 
-function testReadFromProposals() {
-  var dbInst = dbInstG;
-  var tableNameS = "proposals";
-  var colNameS = "CreatedBy";
-  var searchS = userEmail;
-  var jsonyn = false;
-  var retA = readFromTable(dbInst, tableNameS, colNameS, searchS, jsonyn); // all rows in section Electric
-  console.log(retA);
-  dbInst.getconn().close;
-}
 
 /**
  * Purpose: Write a row to the specified table
@@ -840,7 +723,7 @@ function testReadFromProposals() {
  * @param {string[]} recordA - array of strings to write to tableNameS
  * @return {String} retS - return value
  */
-function writeToTable(dbInst, tableNameS, recordA) {
+ function writeToTable(dbInst, tableNameS, recordA) {
 
   try {
     var locConn = dbInst.getconn(); // get connection from the instance
