@@ -154,14 +154,6 @@ function testHandleBR() {
 
 }
 
-// eslint-disable-next-line no-unused-vars
-function testReadInClausesFromTable() {
-  const dbInst = dbInstG;
-  // eslint-disable-next-line no-undef
-  var ret = readInClausesFromTable(dbInst);
-  console.log(JSON.stringify(ret));
-
-}
 
 // eslint-disable-next-line no-unused-vars
 function testZeroValue() {
