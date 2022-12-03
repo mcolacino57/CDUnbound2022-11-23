@@ -7,23 +7,7 @@ UnitTestingApp , docC , docID , foldID , proposalC  , checkZeroValue ,
 onHtmlSubmit  , ckLocalSectionAC  , difference  */
 // foldID, docID in cdCode.js
 
-// eslint-disable-next-line no-unused-vars
-function testIncPropName() {
-  var ret;
-  ret = incPropName("Test Proposal");
-  console.log(ret);
-  ret = incPropName("Test Proposal-001");
-  console.log("001 "+ret)
-  ret = incPropName("Test Proposal-009");
-  console.log("009 "+ ret)
-  ret = incPropName("Test Proposal-099");
-  console.log("099 " + ret)
-  ret = incPropName("Test Proposal-500");
-  console.log("500 "+ ret)
-  ret = incPropName("Test Proposal-999");
-  console.log("0999 "+ ret)
 
-}
 
 function testLogStatusofData(){
   const propID = "41512512-247f-11ec-a0c2-42010a800006"; // Tenant X Downtown
