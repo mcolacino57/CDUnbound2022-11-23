@@ -391,7 +391,6 @@ function getProposalNames(dbInst, userS = userEmail) {
  * toggling all other proposals (meaning ALL) to false first
  * 
  * @param  {Object} dbInst - instance of databaseC
- * @param  {Object} propInst - instance of proposalC
  * @return {String} retS - return value
  */
 /* UPDATE [LOW_PRIORITY] [IGNORE] table_name 
@@ -403,7 +402,8 @@ SET
     condition];*/
 
 const disp_SetProposalCurrent = false;
-function setProposalCurrent(dbInst, pid) {
+function setProposalCurrent(pid) {
+  const dbInst= dbInstG;
   var fS = "setProposalCurrent";
   try {
     // var pid = propInst.getID();

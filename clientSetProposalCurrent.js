@@ -17,7 +17,7 @@ function clientSetProposalCurrent(pnS) {
     // var pid = propInst.getID();
     const pid = propListInst.getIDfromName(pnS);
     propListInst.setCurr(pid);
-    var ret = setProposalCurrent(dbInst, pid);
+    var ret = setProposalCurrent(pid);
     if (!ret)
       throw new Error(`problem in setProposalCurrent for ${pnS}`);
     var overDA = clientGetCDData(pnS);
