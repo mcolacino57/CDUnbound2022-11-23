@@ -1,13 +1,3 @@
-/*global databaseNameG , databaseC , Logger , userEmail , SpreadsheetApp , 
-  , dbInstG , propListInstG
-*/
-/* exported readInListFromTable, , writeToTable , 
-getProposalData , getProposalNamesAndIDs , getProposalNames , getAddressSuiteFloorSF,
-getSpaceDisplay,getNamedProposalData,writePropDetail,
-setProposalCurrent,getCurrentProposal,objectToArray,rangeToObjects,testMatchingBRProposalID,
-testReadFromClauses,testReadFromProposals*/
-
-
 /**
  * Purpose: read row(s) up to maxRows from database using dbInst for connection
  * 
@@ -314,9 +304,7 @@ function getSpaceDisplay(userS = userEmail) {
   logGetSpaceDisplay ? console.log(spaceA) : true;
   dbInst.closeconn();
   return spaceA
-
 }
-
 
 /** 
   * Purpose: Get data from the proposal table
@@ -348,7 +336,6 @@ function getProposalData(dbInst, userS = userEmail) {
   * @param  {String} userS - optional user string (email)
   * @return {object} pObj - object: name, id, loc, size
   */
-
 function getNamedProposalData(dbInst, proposalNameS, userS = userEmail) {
   var fS = "getNamedProposalData";
   try {
@@ -399,38 +386,6 @@ function getProposalNames(dbInst, userS = userEmail) {
   return proposalsA
 }
 
-
-/**
- * Purpose
- *
- * @param  {object} dbInst - instance of database class
- * @param  {number} propID - proposal identifier integer
- * @return {boolean} retS - return value
- */
-function matchingBRProposalID(dbInst, propID) {
-  var fS = "matchingBRProposalID";
-  try {
-    var locConn = dbInst.getconn(); // get connection from the instance
-    var stmt = locConn.createStatement();
-  } catch (err) {
-    Logger.log(`In ${fS} problem with connecting: ${err}`);
-    return false
-  }
-  try {
-    var rs = stmt.executeQuery(`SELECT COUNT(*) FROM base_rent where ProposalID = '${propID}';`);
-    rs.next()
-    var rowCount = rs.getLong(1);
-    if (rowCount == 0) {
-      return false
-    }
-  } catch (err) {
-    var errS = `In ${fS} problem with executing ProposalID = ${propID} query : ${err}`
-    Logger.log(errS);
-    throw new Error(errS); // pass up to calling function
-  }
-  return true
-}
-
 /**
  * Purpose: Takes the proposal instance and sets the proposal to current, 
  * toggling all other proposals (meaning ALL) to false first
@@ -470,6 +425,7 @@ function setProposalCurrent(dbInst, pid) {
   return true
 
 }
+
 /**
  * Purpose: get current proposal from db
  *
@@ -539,7 +495,6 @@ function getPropSize(dbInst, propID, userS) {
   }
   return value
 }
-
 
 /**
  * Purpose
@@ -699,7 +654,7 @@ function rangeToObjects(range) {
  * @params  {array} headers   [string, string, ...]
  * @returns {array}           camelCase 
  */
-function camelArray(headers) {
+ function camelArray(headers) {
   var keys = [];
   for (var i = 0; i < headers.length; ++i) {
     var key = camelString(headers[i]);
@@ -709,10 +664,3 @@ function camelArray(headers) {
   }
   return keys;
 }
-
-
-
-
-
-
-
