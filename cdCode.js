@@ -58,7 +58,7 @@ function onHtmlSubmit(htmlFormObject = {
   // Include this test in production but not in testing
   var dbInst = dbInstG;
   try {
-    ret = evalProposal(dbInst);
+    ret = evalProposal();
     return ret
 
   } catch (err) {
@@ -76,8 +76,9 @@ const logEvalProposal = false;
  * @return {boolean} return - true or false
  */
 // eslint-disable-next-line no-unused-vars
-function evalProposal(dbInst) {
+function evalProposal() {
   const fS = "evalProposal";
+  const dbInst = dbInstG;
   const logLoc = logEvalProposal;
   var ret, propID, propNameS;
   [propID, propNameS] = getCurrPropID_(dbInst, userEmail);
