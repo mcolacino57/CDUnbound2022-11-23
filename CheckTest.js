@@ -44,8 +44,7 @@ function testPropDetailA(dbInst, propID) {
 
 // eslint-disable-next-line no-unused-vars
 function testEvalProposal() {
-  const dbInst = dbInstG;
-  var ret = evalProposal(dbInst);
+  var ret = evalProposal();
   console.log(ret);
   return true
 }
@@ -106,12 +105,6 @@ function runTests() {
 //   dbInst.closeconn()
 //   return ret
 // }
-
-// eslint-disable-next-line no-unused-vars
-function testOnHtmlSubmit() {
-  // eslint-disable-next-line no-unused-vars
-  var ret = onHtmlSubmit({});
-}
 
 
 // // eslint-disable-next-line no-unused-vars
