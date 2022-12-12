@@ -447,7 +447,7 @@ function getClauseInfo(dbInst, ck, proposalSize, proposalLocation, version = "cu
         exactLocationCKA.push(ck);
       }
       else if (clauseLocation.includes('Generic')) {
-        cl = proposalLocation;
+        cl = 'Generic';
       } else {
         continue
       }
