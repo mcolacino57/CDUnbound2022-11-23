@@ -461,7 +461,7 @@ function setProposalCurrent(pid) {
       dbInst.getconn().close;
       throw new Error(`more than one current proposal`)
     }
-    dbInst.getconn().close;
+   // dbInst.getconn().close;
     return [pid, pN]
 
   } catch (err) {
