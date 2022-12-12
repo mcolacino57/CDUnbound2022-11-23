@@ -2,7 +2,7 @@
 /*global Utilities , databaseC, propListC */
 const userEmail = "propgen@squarefoot.com"
 //const userEmail = getEmailFromJSON();
-const databaseNameG = "applesmysql_loc";
+const databaseNameG = "applesmysql";
 const todayS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd");
 const nowS = Utilities.formatDate(new Date(), "GMT-4", "yyyy-MM-dd HH:MM:ss");
 
