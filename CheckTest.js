@@ -10,8 +10,9 @@ onHtmlSubmit  , ckLocalSectionAC  , difference  */
 
 
 function testLogStatusofData(){
-  const propID = "41512512-247f-11ec-a0c2-42010a800006"; // Tenant X Downtown
-  var ret = logStatusofData(propID);
+  var pid,pN;
+  [pid, pN] = getCurrentProposal();
+  var ret = logStatusofData(pid);
   console.log(`In testLogStatusofData ret is ${ret} `);
 }
 
@@ -49,14 +50,6 @@ function testEvalProposal() {
   return true
 }
 
-// // eslint-disable-next-line no-unused-vars
-// function testHandleTenAndPrem() {
-//   const dbInst = dbInstG;
-//   const docInst = new docC(docID, foldID);
-//   var ret = handleTenAndPrem(dbInst, docInst, "Tenant X Downtown", "M");
-//   console.log(ret);
-// }
-
 /**
  * Purpose: Get all the clauseKeys in this form
  *
@@ -80,16 +73,17 @@ function testGetCKThisForm() {
 function runTests() {
   const dbInst = dbInstG;
   // var userS = userEmail;
-  // var propID = getCurrPropID_(dbInst,userS)[0];
+  var pid,pN;
+  [pid, pN] = getCurrentProposal();
   const test = new UnitTestingApp();
-  const propID = "41512512-247f-11ec-a0c2-42010a800006"; // for testing use Downtown Tenant X
+
   test.enable(); // tests will run below this line
   test.runInGas(true);
   if (test.isEnabled) {
-    test.assert(testPropDetailA(dbInst, propID), `testPropDetail -> propID ${propID} `);
-    test.assert(chkMajorPropDetailCategories(propID), `chkMajorPropDetailCategories -> propID ${propID}`);
-    test.assert(logStatusofData(propID), `logStatusofData -> propID ${propID}`);
-    test.assert(testEvalProposal(), `evalProposal -> propID ${propID}`);
+    test.assert(testPropDetailA(dbInst, pid), `testPropDetail -> propID ${pid} `);
+    test.assert(chkMajorPropDetailCategories(pid), `chkMajorPropDetailCategories -> propID ${pid}`);
+    test.assert(logStatusofData(pid), `logStatusofData -> propID ${pid}`);
+    test.assert(testEvalProposal(), `evalProposal -> propID ${pid}`);
     test.assert(testExpckSectionAC(),'testExpckSectionAC')
 
   }
